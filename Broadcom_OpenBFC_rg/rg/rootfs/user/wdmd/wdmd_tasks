@@ -1,0 +1,10 @@
+/*
+ * list of tasks monitored by wdmd
+ * if any disappear for 3 consecutive polls of 10 seconds then
+ * shutdown and trigger watchdog.
+ */
+
+smd
+ssk
+erouterctld
+cmon

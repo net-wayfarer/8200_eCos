@@ -1,0 +1,221 @@
+/include/ "bcm3384_common.dtsi"
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "brcm,bcm3384", "brcm,bcm33843";
+
+	memory@0 {
+		device_type = "memory";
+
+		/* Typical range.  The bootloader should fill this in. */
+		reg = <0x0 0x06000000>;
+
+		/* Inverted mapping in low 256MB; 1:1 mapping above that. */
+		dma-xor-mask = <0x00000000>;
+		dma-xor-limit = <0x00000000>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		/* On BMIPS5000 this is 1/8th of the CPU core clock */
+		mips-hpt-frequency = <100000000>;
+
+		cpu@0 {
+			compatible = "brcm,bmips5000";
+			device_type = "cpu";
+			reg = <0>;
+		};
+
+		cpu@1 {
+			compatible = "brcm,bmips5000";
+			device_type = "cpu";
+			reg = <1>;
+		};
+	};
+
+	cpu_intc: cpu_intc@0 {
+		#address-cells = <0>;
+		compatible = "mti,cpu-interrupt-controller";
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+	};
+
+	periph_intc: periph_intc@14e00038 {
+		compatible = "brcm,bcm7120-l2-intc";
+		reg = <0x14e00038 0x8 0x14e00340 0x8>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&cpu_intc>;
+		interrupts = <4>;
+		brcm,int-map-mask = <0xffffffff 0xffffffff>;
+	};
+
+	zmips_intc: zmips_intc@104b0060 {
+		compatible = "brcm,bcm7120-l2-intc";
+		reg = <0x104b0060 0x8>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&periph_intc>;
+		interrupts = <29>;
+		brcm,int-map-mask = <0xffffffff>;
+	};
+
+	iop_intc: iop_intc@14e00058 {
+		compatible = "brcm,bcm7120-l2-intc";
+		reg = <0x14e00058 0x8>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&cpu_intc>;
+		interrupts = <6>;
+		brcm,int-map-mask = <0xffffffff>;
+	};
+
+	nand_intc: nand_intc@14e000f0 {
+		compatible = "brcm,bcm3384-nand-intc";
+		reg = <0x14e000f0 0x4>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&periph_intc>;
+		interrupts = <3>;
+
+		enable-shift = <16>;
+		status-shift = <0>;
+		#interrupts = <8>;
+	};
+
+	pcie0_intc: pcie0_intc@12808300 {
+		compatible = "brcm,bcm3384-pci-intc";
+		reg = <0x12808300 0x20>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&periph_intc>;
+		interrupts = <44>;
+
+		#interrupts = <32>;
+	};
+
+	pcie1_intc: pcie1_intc@12a08300 {
+		compatible = "brcm,bcm3384-pci-intc";
+		reg = <0x12a08300 0x20>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&periph_intc>;
+		interrupts = <45>;
+
+		#interrupts = <32>;
+	};
+
+	nand@14e02200 {
+		compatible = "brcm,brcmnand-v5.0", "brcm,brcmnand";
+		#size-cells = <0x0>;
+		#address-cells = <0x1>;
+		reg-names = "nand";
+		reg = <0x14e02200 0x600>;
+		interrupt-parent = <&nand_intc>;
+		interrupts = <0x4>;
+
+		semaphore-magic = <0x5a>;
+
+		nandcs@0 {
+			#size-cells = <0x2>;
+			#address-cells = <0x2>;
+			compatible = "brcm,nandcs";
+			reg = <0x0>;
+			nand-on-flash-bbt;
+
+			/*
+			 * These nodes are commented out because aeolus
+			 * will fill in the correct nodes it gets from CM
+			 *
+			linuxapps@20000 {
+				reg = <0x0 0x00020000 0x0 0x0bc60000>;
+			};
+			image1@bc80000 {
+				reg = <0x0 0x0bc80000 0x0 0x00d80000>;
+			};
+			image2@ca00000 {
+				reg = <0x0 0x0ca00000 0x0 0x00d80000>;
+			};
+			linux@d780000 {
+				reg = <0x0 0x0d780000 0x0 0x00480000>;
+			};
+			linuxkfs@dc00000 {
+				reg = <0x0 0x0dc00000 0x0 0x011e0000>;
+			};
+			dhtml@ee00000 {
+				reg = <0x0 0x0ee00000 0x0 0x01200000>;
+			};
+			*
+			*
+			*/
+		};
+	};
+
+	pci_perst: pci_perst@14e0008c {
+		reg = <0x14e0008c 4>;
+		compatible = "brcm,brcm3384-pci-perst";
+	};
+
+	pcie0: pcie@12800000 {
+		reg = <0x12800000 0x8130>, <0x12808400 0xc>;
+		interrupt-parent = <&pcie0_intc>;
+		compatible = "brcm,bcm3384-pci-plat-dev";
+		#interrupt-cells = <1>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		linux,pci-domain = <0>;
+		brcm,pci-perst = <&pci_perst>;
+		bus-range = <0x00 0xff>;
+		ranges = <0x02000000 0x0 0xd0000000 0xd0000000 0x0 0x08000000
+                          0x02000000 0x0 0xd8000000 0xd8000000 0x0 0x08000000>;
+		interrupt-map-mask = <0 0 0 7>;
+		interrupt-map = <
+			0 0 0 1 &pcie0_intc 1
+			0 0 0 2 &pcie0_intc 2
+			0 0 0 3 &pcie0_intc 3
+			0 0 0 4 &pcie0_intc 4>;
+	};
+
+	pcie1: pcie@12a00000 {
+		reg = <0x12a00000 0x8130>, <0x12a08400 0xc>;
+		interrupt-parent = <&pcie1_intc>;
+		compatible = "brcm,bcm3384-pci-plat-dev";
+		#interrupt-cells = <1>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		linux,pci-domain = <1>;
+		brcm,pci-perst = <&pci_perst>;
+		bus-range = <0x00 0xff>;
+		ranges = <0x02000000 0x0 0xe0000000 0xe0000000 0x0 0x08000000
+                          0x02000000 0x0 0xe8000000 0xe8000000 0x0 0x08000000>;
+		interrupt-map-mask = <0 0 0 7>;
+		interrupt-map = <
+			0 0 0 1 &pcie1_intc 1
+			0 0 0 2 &pcie1_intc 2
+			0 0 0 3 &pcie1_intc 3
+			0 0 0 4 &pcie1_intc 4>;
+	};
+	watchdog@104b01cc {
+		compatible = "brcm,bcm7038-wdt";
+		clock-frequency = <0x337f980>;
+		reg = <0x104b01cc 0xc>;
+	};
+};

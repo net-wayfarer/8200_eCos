@@ -1,0 +1,102 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390b0)";
+	compatible = "brcm,bcm3390b0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier@0 {
+			    /* chip id    mfg id     don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000000 >;
+			     /* DCM  PHYDVT */
+		boardid_msk = < 0xff 0xf0 >;
+		boardid_val = < 0x61 0x70 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000000 >;
+			     /* DCM  PHYDVT */
+		boardid_msk = < 0xff 0xf0 >;
+		boardid_val = < 0x61 0x70 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&mbox {
+	override-bmu-state;
+};
+
+&ethsw {
+	led-map    = <0x0f>;
+};
+
+/ {
+	rdb {
+		usb-phy@f1010200 {
+			status = "disabled";
+		};
+
+		ehci_v2@f1010300 {
+			status = "disabled";
+		};
+
+		ohci_v2@f1010400 {
+			status = "disabled";
+		};
+
+		xhci_v2@f1011000 {
+			status = "disabled";
+		};
+
+		bdc_v2@f1012000 {
+			status = "disabled";
+		};
+
+		usb@f1010200 {
+			status= "disabled";
+
+			ehci@f1010300 {
+				status = "disabled";
+			};
+
+			ohci@f1010400 {
+				status = "disabled";
+			};
+
+			xhci@f1011000 {
+				status = "disabled";
+			};
+
+			bdc@f1012000 {
+				status = "disabled";
+			};
+		};
+
+		rf4ce@f0e00000 {
+			status = "disabled";
+			/* Old BOLT versions will set the above status to "ok" for all platforms,
+			so add another property for new software images to discern whether
+			status property is to be obeyed. Only valid platforms have this new property
+			set correctly to "true". */
+			trust-status = "false";
+		};
+	};
+};

@@ -1,0 +1,8 @@
+config OPENTHREAD
+	tristate "BroadOT driver"
+	default m
+	---help---
+	  Say Y here to enable the Broadcom OpenThread device driver.
+
+          This driver can also be built as a module. To do so say M here.
+	  The module will be called 'broadot_drv'.

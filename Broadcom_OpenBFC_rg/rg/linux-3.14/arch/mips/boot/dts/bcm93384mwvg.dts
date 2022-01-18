@@ -1,0 +1,143 @@
+/dts-v1/;
+
+/include/ "bcm3384_zephyr.dtsi"
+
+/ {
+	compatible = "brcm,bcm93384wvg", "brcm,bcm3384";
+	model = "Broadcom BCM93384MWVG";
+	subsystem = "rg_2nd_core";
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+		stdout-path = &uart0;
+	};
+	board_id {
+		product_name = "BCM93384MWVG";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+/include/ "bcm3384_mgw_zephyr.dtsi"
+
+/ {
+	pinctrl_gpio: pinctrl_gpio@14e00100 {
+
+		pinctrl-0 = <&wifi_pwr_ctrl
+			     &mocapwr &bmoca_int &mocaflwctrl &moca_rgmii0
+			     &ethsw_mdio &ethsw_rgmii &ethsw_spi &ethsw_pwr_ctrl
+			     &i2c_pwr &i2c_wbid>;
+		mocapwr: mocapwr {
+			brcm,pins = <67>;
+			brcm,function = <5>; /* GPIO */
+		};
+		bmoca_int: bmoca_int {
+			brcm,pins = <8>;
+			brcm,function = <5>; /* GPIO */
+		};
+		mocaflwctrl: mocaflwctrl {
+			brcm,pins = <16 17>;
+			brcm,function = <5>; /* GPIO */
+		};
+		moca_rgmii0: moca_rgmii0 {
+			brcm,pins = <42 43 44 45 46 47 48 49 50 51 52 53>;
+			brcm,function = <1>; /* RGMII0 */
+		};
+		i2c_wbid: i2c_wbid {
+			brcm,pins = <36 37>;
+			brcm,function = <1>; /* RFT1_DATA/CLK */
+		};
+		i2c_pwr: i2c_pwr {
+			brcm,pins = <33>;
+			brcm,function = <5>; /* GPIO */
+		};
+
+	};
+
+	vreg_i2c_pwr: vreg-i2c-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-i2c-pwr";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pinctrl_gpio 33 0>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	vreg_moca_pwr: vreg-moca-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-moca-pwr";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pinctrl_gpio 67 0>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	spi@14e01000 {
+
+		bbsi@1  {
+			reg = <1>;
+			compatible = "brcm,bbsi";
+			spi-max-frequency = <3125000>;
+			spi-cpol = <1>;
+			spi-cpha = <1>;
+		};
+        };
+
+	i2c@14e00e00 {
+		clock-frequency = <50000>;
+		compatible = "brcm,brcmper-i2c";
+		reg = <0x14e00e00 0x58>,
+		      <0x104b00f4 0x4>;
+		port-select = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		wbid@24 {
+			compatible = "brcm,wbid";
+			reg = <0x24>;
+		};
+	};
+
+	moca0: moca0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "moca0";
+		if-id = <1>;
+		if-sub-id = <0>; /* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "phy";
+		phy-mode = "moca";
+		fixed-link {
+			full-duplex;
+			speed = <1000>;
+		};
+	};
+
+	bmoca@0 {
+		hw-rev = <0x2002>;
+		compatible = "brcm,bmoca-instance";
+		reg = <0x10600000>;
+		bmoca-gpio = <&pinctrl_gpio 8 0>;
+		/* interrupt-names = "main"; */
+		/* interrupt-parent = <&pinctrl_gpio>; */
+		/* interrupts = <8 1>; */
+		enet-id = <0x0>;
+		rf-band = "d_low";
+		use-spi = <1>;
+		local-mac-address = "bbcde";
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+};

@@ -1,0 +1,212 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390b0)";
+	compatible = "brcm,bcm3390b0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier@0 {
+			    /*			     BMU mbox0: */
+			    /* chip id    mfg id     on battery */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000008 >;
+			     /*
+			      * Only boards supporting battery. Can't rely on
+			      * BMU's mbox0 power state on non-battery boards.
+			      */
+			     /* SMWVG  SV     VCM    VCMS */
+		boardid_msk = < 0xf0   0xf0   0xff   0xff >;
+		boardid_val = < 0x40   0x10   0x81   0x82 >;
+	};
+
+	identifier@1 {
+			    /*			     BMU mbox0: */
+			    /* chip id    mfg id     on battery */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000008 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000008 >;
+			     /*
+			      * Only boards supporting battery. Can't rely on
+			      * BMU's mbox0 power state on non-battery boards.
+			      */
+			     /* SMWVG  SV     VCM    VCMS */
+		boardid_msk = < 0xf0   0xf0   0xff   0xff >;
+		boardid_val = < 0x40   0x10   0x81   0x82 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&cpu1 {
+	status = "disabled";
+};
+
+&pcie0 {
+	status = "disabled";
+};
+
+&pcie1 {
+	status = "disabled";
+};
+
+&pcie2 {
+	status = "disabled";
+};
+
+&usb_phy0 {
+	status = "disabled";
+};
+
+&ehci_v2_0 {
+	status = "disabled";
+};
+
+&ohci_v2_0 {
+	status = "disabled";
+};
+
+&xhci_v2_0 {
+	status = "disabled";
+};
+
+&usb_phy1 {
+	status = "disabled";
+};
+
+&ehci_v2_1 {
+	status = "disabled";
+};
+
+&ohci_v2_1 {
+	status = "disabled";
+};
+
+&xhci_v2_1 {
+	status = "disabled";
+};
+
+&bdc_v2_1 {
+	status = "disabled";
+};
+
+&usb0 {
+	status = "disabled";
+};
+
+&ehci0 {
+	status = "disabled";
+};
+
+&ohci0 {
+	status = "disabled";
+};
+
+&xhci0 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+};
+
+&ehci1 {
+	status = "disabled";
+};
+
+&ohci1 {
+	status = "disabled";
+};
+
+&xhci1 {
+	status = "disabled";
+};
+
+&bdc1 {
+	status = "disabled";
+};
+
+&sdhci0 {
+	status = "disabled";
+};
+
+&sdhci1 {
+	status = "disabled";
+};
+
+&spi0 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&rf4ce {
+	status = "disabled";
+	/* Old BOLT versions will set the above status to "ok" for all platforms,
+	so add another property for new software images to discern whether
+	status property is to be obeyed. Only valid platforms have this new property
+	set correctly to "true". */
+	trust-status = "false";
+};
+
+&pwm0 {
+	status = "disabled";
+};
+
+&pwm1 {
+	status = "disabled";
+};
+
+&eth0 {
+	status = "disabled";
+};
+
+&eth1 {
+	status = "disabled";
+};
+
+&eth2 {
+	status = "disabled";
+};
+
+&eth3 {
+	status = "disabled";
+};
+
+&cm0 {
+	status = "disabled";
+};
+
+&miimdiomux {
+	status = "disabled";
+};
+
+&unimac_mdio {
+	status = "disabled";
+};
+
+&runner {
+	status = "disabled";
+};
+
+&i2c {
+	status = "disabled";
+};
+
+&wbid {
+	status = "disabled";
+};

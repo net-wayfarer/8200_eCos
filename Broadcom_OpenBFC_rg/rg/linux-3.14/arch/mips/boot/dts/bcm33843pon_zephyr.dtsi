@@ -1,0 +1,404 @@
+/include/ "bcm3384_mgw.dtsi"
+
+/ {
+	pinctrl_gpio: pinctrl_gpio@14e00100 {
+		compatible = "brcm,bcm3384-pinctrl-gpio";
+		reg = <0x14e00100 0x2c>,	/* GPIO direction regs		*/
+		      <0x14e0012c 0x2c>,	/* GPIO data regs		*/
+		      <0x14e0029c 0x14>,	/* GPIO mux regs		*/
+		      <0x14e00080 0x4>,		/* GPIO mux readback reg	*/
+		      <0x104b00f8 0x4>,		/* MBOX cfg reg (HW spinlock)	*/
+		      <0x14e0006c 0x4>,		/* GPIO IRQ ctrl reg		*/
+		      <0x14e00098 0x4>,		/* GPIO IRQ mux lo reg		*/
+		      <0x14e003f4 0x4>,		/* GPIO IRQ mux hi reg		*/
+		      <0x104b0064 0x4>;		/* G2U ZMIPS IRQ status reg	*/
+		#gpio-cells = <0x2>;
+		gpio-controller;
+		brcm,num-gpio-pins = <147>;
+		brcm,num-pinmux-funcs = <8>;
+		#interrupt-cells = <2>;
+		interrupt-parent = <&zmips_intc>;
+		interrupts = <14>;
+		interrupt-controller;
+		brcm,parent-irq-status-bit = <14>;
+		brcm,gpio_irq_slot_assignments = <3 4 5>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&wifi_pwr_ctrl
+			     &mocapwr &bmoca_int &mocaflwctrl &pon_rgmii
+			     &ethsw_mdio &ethsw_rgmii &ethsw_spi>;
+		wifi_pwr_ctrl: wifi_pwr_ctrl {
+			brcm,pins = <30 31>;
+			brcm,function = <5>; /* GPIO */
+		};
+		mocapwr: mocapwr {
+			brcm,pins = <67>;
+			brcm,function = <5>; /* GPIO */
+		};
+		bmoca_int: bmoca_int {
+			brcm,pins = <8>;
+			brcm,function = <5>; /* GPIO */
+		};
+		mocaflwctrl: mocaflwctrl {
+			brcm,pins = <16 17>;
+			brcm,function = <5>; /* GPIO */
+		};
+		pon_rgmii: pon_rgmii {
+			brcm,pins = <42 43 44 45 46 47 48 49 50 51 52 53>;
+			brcm,function = <1>; /* RGMII0 */
+		};
+		ethsw_mdio: ethsw_mdio {
+			brcm,pins = <38 39>;
+			brcm,function = <4>; /* MDIO */
+		};
+		ethsw_rgmii: ethsw_rgmii {
+			brcm,pins = <54 55 56 57 58 59 60 61 62 63 64 65>;
+			brcm,function = <1>; /* RGMII1 */
+		};
+		ethsw_spi: ethsw_spi {
+			brcm,pins = <84 85 86 89>;
+			brcm,function = <0 0 0 1>; /* SPI */
+		};
+	};
+
+	vreg_wifi_pwr: vreg-wifi-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wifi-pwr";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pinctrl_gpio 30 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_wifi_rf_pwr: vreg-wifi-rf-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wifi-rf-pwr";
+		regulator-min-microvolt = <4200000>;
+		regulator-max-microvolt = <4200000>;
+		gpio = <&pinctrl_gpio 31 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	dqm@13c00000 {
+		compatible = "brcm,dqm";
+		reg = <0x13c00000 0x8000>;
+		interrupt-parent = <&iop_intc>;
+		interrupts = <10>;
+
+		dev-name = "gfap";
+
+		l1-irq-mask-offset	= <0x1058>;
+		l1-irq-status-offset	= <0x100c>;
+		l1-irq-dqm-mask		= <0x04000000 0x08000000>;
+
+		cfg-offset		= <0x1800 0x2200>;
+		lwm-irq-mask-offset	= <0x182c 0x222c>;
+		lwm-irq-status-offset	= <0x180c 0x220c>;
+		ne-irq-mask-offset	= <0x1830 0x2230>;
+		ne-irq-status-offset	= <0x1818 0x2218>;
+		ne-status-offset	= <0x1820 0x2220>;
+		fpm-alloc-offset	= <0x0000 0x0000>;
+
+		q-ctl-base-offset	= <0x1a00 0x2400>;
+		q-data-base-offset	= <0x1c00 0x2600>;
+		q-status-base-offset	= <0x1f00 0x2900>;
+		q-mib-base-offset       = <0x2000 0x2a00>;
+
+		q-count			= <64>;
+		cfg-qsm			= <0>;
+		qsm-size		= <0x3000>;
+	};
+
+	dqm@104b0000 {
+		compatible = "brcm,dqm";
+		reg = <0x104b0000 0x8000>;
+		interrupt-parent = <&zmips_intc>;
+		interrupts = <22>;
+
+		dev-name = "g2u";
+
+		l1-irq-mask-offset	= <0x0060>;
+		l1-irq-status-offset	= <0x0064>;
+		l1-irq-dqm-mask		= <0x00400000>;
+
+		cfg-offset		= <0x0380>;
+		lwm-irq-mask-offset	= <0x0394>;
+		lwm-irq-status-offset	= <0x03a0>;
+		ne-irq-mask-offset	= <0x03d4>;
+		ne-irq-status-offset	= <0x03e0>;
+		ne-status-offset	= <0x03e8>;
+		fpm-alloc-offset	= <0x0000>;
+
+		q-ctl-base-offset	= <0x0400>;
+		q-data-base-offset	= <0x0800>;
+		q-status-base-offset	= <0x0b00>;
+		q-mib-base-offset       = <0x0c00>;
+
+		q-count			= <32>;
+		cfg-qsm			= <1>;
+		qsm-size		= <0x1000>;
+		#qsm-alloc-cells	= <4>;
+					  /* Q #, # words/element, # elements (depth), offload(1)/non-offload(0) */
+		qsm-allocation		= < 2   4  16    0		/* RPC RG-->CM				*/
+					    3   4  16    0		/* RPC RG<--CM				*/
+					    6   4  16    0		/* RPC STB-->CM				*/
+					    7   4  16    0		/* RPC STB<--CM				*/
+					    14  2  32    0		/* Private Network RG (bridge)-->CM	*/
+					    15  2  32    0		/* Private Network RG (bridge)<--CM	*/
+					    20  4  16    0		/* RPC SVM-->CM				*/
+					    21  4  16    0 >;		/* RPC SVM<--CM				*/
+	};
+
+	rpcrgcm: rpcrgcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "rg-cm";
+		dqm = "g2u";
+		tx-q = <2>;
+		rx-q = <3>;
+	};
+
+	rpcsvmcm: rpcsvmcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "svm-cm";
+		dqm = "g2u";
+		tx-q = <20>;
+		rx-q = <21>;
+	};
+
+	rpcstbcm: rpcstbcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "stb-cm";
+		dqm = "g2u";
+		tx-q = <6>;
+		rx-q = <7>;
+	};
+
+	qchan0: q-channel0 {
+		dev-name = "fap-exception";
+
+		#tx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority				*/
+		tx-q =	"gfap",		"10",	"0",	/* RG-->GFAP, hi priority	*/
+			"gfap",		"11",	"1";	/* RG-->GFAP, lo priority	*/
+		#rx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority				*/
+		rx-q =	"gfap",		"25",	"0",	/* GFAP-->RG, hi priority	*/
+			"gfap",		"24",	"1",	/* GFAP-->RG, lo priority	*/
+			"gfap",		"23",	"2";	/* GFAP-->RG, ctrl pkt		*/
+
+		type = "fap-exception";
+		q-msg-fmt = "gfap-fpm";
+	};
+
+	qchan1: q-channel1 {
+                dev-name = "cm-private";
+
+		#tx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority	*/
+		tx-q =	"g2u",	"14",	"0";	/* RG-->CM	*/
+		#rx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority	*/
+		rx-q =	"g2u",	"15",	"0";	/* CM-->RG	*/
+
+		type = "point-to-point";
+		q-msg-fmt = "gfap-fpm";
+	};
+
+	priv0 { /* RG <--> CM private */
+		compatible = "brcm,dqnet";
+		channel = <&qchan1>;
+		dev-name = "priv0";
+		if-id = <0>;
+		if-sub-id = <0>;
+		demux = "none";
+		link-type = "rpc";
+		rpc-channel = <&rpcrgcm>;
+	};
+
+	wan_unimac: unimac@12c00000 {
+		compatible = "brcm,unimac";
+		reg = <0x12c00000 0x20000>;
+		mbdma_reg_offset = <0x0>;
+		unimac_reg_offset = <0x600>;
+		id_string = "unimac0";
+		mbdma_use_scb = <0x0>;
+		mbdma_burst_size = <64>;
+		external_phy = <1>;
+		mbdma_channel0_rx_macid = <1>;
+		mbdma_channel0_tx_macid = <1>;
+		mbdma_channel1_rx_macid = <0>;
+		mbdma_channel1_tx_macid = <0>;
+		rgmii_id_mode_disable = <0>;
+		tx_clk_dly = <0xb>;
+		rx_clk_dly = <0xf>;
+	};
+
+	unimac@12c02000 {
+		compatible = "brcm,unimac";
+		reg = <0x12c02000 0x20000>;
+		unimac_reg_offset = <0x600>;
+		id_string = "unimac1";
+		skip_mbdma_init = <1>;
+		external_phy = <1>;
+	};
+
+	gfap@13c00000 {
+		compatible = "brcm,gfap";
+		reg = <0x13c00000 0x1000000>;
+		id_string = "gfap";
+		gfap_use_scb = <0x0>;
+		switch_data_mac = <0x1>;
+		gfap_ethwan = <0x1>;
+	};
+
+	spi@14e01000 {
+		compatible = "brcm,bcm6328-hsspi";
+		reg = <0x14e01000 0x800>,
+		      <0x104b00fc 0x4>;
+		interrupts = <5>;
+		interrupt-parent = <&periph_intc>;
+		clocks = <&hsspi_clock>;
+		clock-names = "hsspi";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		bbsi@1  {
+			reg = <1>;
+			compatible = "brcm,bbsi";
+			spi-max-frequency = <3125000>;
+			spi-cpol = <1>;
+			spi-cpha = <1>;
+
+			/* 3rd value: 0=active_hi, 1=active_lo */
+			mocapwr-gpio = <&pinctrl_gpio 67 0>;	/* MOCA Power */
+
+			/*
+			 * logical (active/inactive, not hi/lo) value, must be
+			 * 1-1 with output-gpios.
+			 */
+			mocapwr-initval = < 1 >;		/* MOCA Power */
+		};
+
+		ethsw@2 {
+			reg = <2>;
+			compatible = "brcm,ethsw";
+			spi-max-frequency = <1563000>;
+			dev-name   = "ethsw";
+			mii-port   = <5 0 1000>; /* the switch port 5 connects to MoCA */
+			imp-port   = <8 1000>;
+			eee-support = <1>;
+		};
+	};
+
+	eth0: ethernet0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth0";
+		if-id = <0>;
+		if-sub-id = <0>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth1: ethernet1 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth1";
+		if-id = <0>;
+		if-sub-id = <1>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth2: ethernet2 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth2";
+		if-id = <0>;
+		if-sub-id = <2>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth3: ethernet3 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth3";
+		if-id = <0>;
+		if-sub-id = <3>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	moca0: moca0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "moca0";
+		if-id = <0>;
+		if-sub-id = <4>;	/* 4: 53124, 5:53134. mii port 5 in 53124/53134 */
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	bmoca@0 {
+		hw-rev = <0x2002>;
+		compatible = "brcm,bmoca-instance";
+		interrupt-names = "main";
+		reg = <0x10600000>;
+		bmoca-gpio = <&pinctrl_gpio 8 0>;
+		interrupt-parent = <&pinctrl_gpio>;
+		interrupts = <8 1>;
+		enet-id = <0x0>;
+		rf-band = "d_low";
+		use-spi = <1>;
+		local-mac-address = "bbcde";
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+
+	emta0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "emta0";
+		if-id = <15>;
+		if-sub-id = <0>;
+		demux = "subid";
+		link-type = "phy";
+		rpc-channel = <&rpcrgcm>;
+		phy-mode = "rgmii";
+		fixed-link {
+			full-duplex;
+			speed = <1000>;
+		};
+	};
+
+	pon0: pon0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "pon0";
+		if-id = <1>;
+		if-sub-id = <0>;
+		demux = "subid";
+		link-type = "phy";
+		mac-handle = <&wan_unimac>;
+		phy-mode = "rgmii";
+		fixed-link {
+			full-duplex;
+			speed = <1000>;
+		};
+	};
+};
+
+&pcie0 {
+	supply-names = "vreg-wifi-pwr", "vreg-wifi-rf-pwr";
+	vreg-wifi-pwr-supply = <&vreg_wifi_pwr>;
+	vreg-wifi-rf-pwr-supply = <&vreg_wifi_rf_pwr>;
+};
+
+&pcie1 {
+	supply-names = "vreg-wifi-pwr", "vreg-wifi-rf-pwr";
+	vreg-wifi-pwr-supply = <&vreg_wifi_pwr>;
+	vreg-wifi-rf-pwr-supply = <&vreg_wifi_rf_pwr>;
+};

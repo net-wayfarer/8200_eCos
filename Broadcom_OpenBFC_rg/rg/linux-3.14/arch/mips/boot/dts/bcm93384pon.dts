@@ -1,0 +1,234 @@
+/dts-v1/;
+
+/include/ "bcm3384_zephyr.dtsi"
+
+/ {
+	compatible = "brcm,bcm93384wvg", "brcm,bcm3384";
+	model = "Broadcom BCM93384WVG";
+	subsystem = "rg_2nd_core";
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+		stdout-path = &uart0;
+	};
+	board_id {
+		product_name = "BCM93384PON";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+/include/ "bcm3384pon_zephyr.dtsi"
+
+/ {
+	pinctrl_gpio: pinctrl_gpio@14e00100 {
+		pinctrl-0 = <&slic_spi &wifi_pwr_ctrl
+			     &mocapwr &bmoca_int &mocaflwctrl &pon_rgmii
+			     &ethsw_mdio &ethsw_rgmii &ethsw_spi &ethsw_pwr_ctrl>;
+		slic_spi: slic_spi {
+			brcm,pins = <1>;
+			brcm,function = <1>; /* SPIM_SS3_B for Si32392 */
+		};
+		mocapwr: mocapwr {
+			brcm,pins = <39>;
+			brcm,function = <5>; /* GPIO */
+		};
+		pon_rgmii: pon_rgmii {
+			brcm,pins = <54 55 56 57 58 59 60 61 62 63 64 65>;
+			brcm,function = <1>; /* RGMII1 */
+		};
+		ethsw_mdio: ethsw_mdio {
+			brcm,pins = <66 67>;
+			brcm,function = <1>; /* RGMII0_MDC/MDIO */
+		};
+		ethsw_rgmii: ethsw_rgmii {
+			brcm,pins = <42 43 44 45 46 47 48 49 50 51 52 53>;
+			brcm,function = <1>; /* RGMII0 */
+		};
+	};
+
+	wifi_wps@0 {
+		led0-gpio = <&pinctrl_gpio 6 1>;
+		led1-gpio = <&pinctrl_gpio 7 1>;
+	};
+
+	unimac0: unimac@12c00000 {
+		mbdma_channel0_rx_macid = <0>;
+		mbdma_channel0_tx_macid = <0>;
+		mbdma_channel1_rx_macid = <1>;
+		mbdma_channel1_tx_macid = <1>;
+		rgmii_id_mode_disable = <1>;
+		tx_clk_dly = <4>;
+		rx_clk_dly = <4>;
+	};
+
+	unimac1: unimac@12c02000 {
+		rgmii_id_mode_disable = <0>;
+		tx_clk_dly = <8>;
+		rx_clk_dly = <8>;
+	};
+
+	gfap@13c00000 {
+		switch_data_mac = <0x0>;
+	};
+
+
+	unimac0_mdio: mdio@12c00600 {
+		compatible = "brcm,unimac-mdio";
+		dev-name = "UniMAC MII bus";
+		reg = <0x12c0062c 0x4>,
+		      <0x12c00600 0x4>;
+		use-external-phy;
+		reg-names = "unimac0_mdio";
+		#size-cells = <1>;
+		#address-cells = <1>;
+		/*
+		 * Below are all possible phy's on the
+		 * external switch chips supported. However, since the
+		 * chips may or may not have the associated port & phy
+		 * bonded out of the chip (i.e. the 53124 does not have
+		 * port 0 bonded out) then they might not all be used.
+		 * 53124 used sw_p1_phy..sw_p4_phy while 53134 uses
+		 * sw_phy0_phy..sw_p3_phy.
+		 */
+		sw_p0_phy: phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+			phy-mode = "rgmii";
+		};
+		sw_p1_phy: phy@1 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <1>;
+			phy-mode = "rgmii";
+		};
+		sw_p2_phy: phy@2 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <2>;
+			phy-mode = "rgmii";
+		};
+		sw_p3_phy: phy@3 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <3>;
+			phy-mode = "rgmii";
+		};
+		sw_p4_phy: phy@4 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <4>;
+			phy-mode = "rgmii";
+		};
+	};
+
+	spi@14e01000 {
+		compatible = "brcm,bcm6328-hsspi";
+		reg = <0x14e01000 0x7ff>,
+		      <0x104b00fc 0x8>;
+		interrupts = <5>;
+		interrupt-parent = <&periph_intc>;
+		clocks = <&hsspi_clock>;
+		clock-names = "hsspi";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		bbsi@1  {
+			reg = <1>;
+			compatible = "brcm,bbsi";
+			spi-max-frequency = <3125000>;
+			spi-cpol = <1>;
+			spi-cpha = <1>;
+
+			/* 3rd value: 0=active_hi, 1=active_lo */
+			mocapwr-gpio = <&pinctrl_gpio 39 0>;	/* MOCA Power */
+
+			/*
+			 * logical (active/inactive, not hi/lo) value, must be
+			 * 1-1 with output-gpios.
+			 */
+			mocapwr-initval = < 1 >;		/* MOCA Power */
+		};
+
+		ethsw@2 {
+			reg = <2>;
+			compatible = "brcm,ethsw";
+			spi-max-frequency = <1563000>;
+			dev-name   = "ethsw";
+			mii-port   = <5 0 1000>;/* the switch port 5 connects to MoCA */
+			imp-port   = <8 1000>;
+			eee-support = <1>;
+			vlan-default-mode = <1>;
+			pwr-supply = <&vreg_ethsw_pwr>;
+			/*
+			 * Below are references to all possible phy's on the
+			 * external switch chips supported. However, since the
+			 * chips may or may not have the associated port & phy
+			 * bonded out of the chip (i.e. the 53124 does not have
+			 * port 0 bonded out) then they might not all be used.
+			 * 53124 used sw_p1_phy..sw_p4_phy while 53134 uses
+			 * sw_phy0_phy..sw_p3_phy.
+			 */
+			phy-handles = <&sw_p0_phy>,
+				      <&sw_p1_phy>,
+				      <&sw_p2_phy>,
+				      <&sw_p3_phy>,
+				      <&sw_p4_phy>;
+	        };
+	};
+
+	eth0: ethernet0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth0";
+		if-id = <0>;
+		if-sub-id = <0>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth1: ethernet1 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth1";
+		if-id = <0>;
+		if-sub-id = <1>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+
+	eth2: ethernet2 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth2";
+		if-id = <0>;
+		if-sub-id = <2>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth3: ethernet3 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth3";
+		if-id = <0>;
+		if-sub-id = <3>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	moca0: moca0 {
+		if-sub-id = <4>;	/* 4: 53124, 5:53134. mii port 5 in 53124/53134 */
+	};
+
+	fixedpon0: fixedpon0 {
+		mac-handle = <&unimac1>;
+	};
+};

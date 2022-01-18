@@ -1,0 +1,10 @@
+/include/ "bcm93384wvg.dts"
+
+/ {
+	compatible = "brcm,bcm93384lwvg", "brcm,bcm3384";
+	model = "Broadcom BCM93384LWVG";
+
+	board_id {
+		product_name = "BCM93384LWVG";
+	};
+};

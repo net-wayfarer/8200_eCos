@@ -1,0 +1,24 @@
+Broadcom WBID (Wireless Board Identifier) i2c device client
+
+Required properties:
+
+- compatible: should be "brcm,wbid"
+- reg: specifies the I2C address and second address is the spinlock address
+
+Example:
+
+
+i2c@14e00e00 {
+	clock-frequency = <50000>;
+	compatible = "brcm,brcmper-i2c";
+	reg = <0x14e00e00 0x58>,
+	      <0x104b00f4 0x4>;
+	port-select = <1>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	wbid@24 {
+		compatible = "brcm,wbid";
+		reg = <0x24>;
+	};
+};

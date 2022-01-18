@@ -1,0 +1,163 @@
+Broadcom BCM3384 GPIO (and pinmux) controller
+
+The BCM3384 GPIO module is a combined GPIO controller, (GPIO) interrupt
+controller, and pinmux/control device.
+
+Required properties:
+
+- compatible:
+    Must be "brcm,bcm3384-pinctrl-gpio"
+
+- reg:
+    entry    description
+    1        Physical address of the GPIO direction registers
+    2        Physical address of the GPIO data registers
+    3        Physical address of the GPIO mux registers
+    4        Physical address of the GPIO mux readback register
+    5        Physical address of the mailbox synchronization register used for
+             a hardware spinlock between the router and cable modem CPU's
+    6        Physical address of the GPIO IRQ control mux register
+    7        Physical address of the GPIO IRQ mux low register
+    7        Physical address of the GPIO IRQ mux high register
+    8        Physical address of the G2U bridge IRQ status register
+
+- #gpio-cells:
+    Should be two. The first cell is the pin number and the
+    second cell is used to specify optional parameters:
+    - bit 0 specifies polarity (0 for active high, 1 for active low)
+
+- gpio-controller:
+    Marks the device node as a GPIO controller.
+
+- #interrupt-cells:
+    Should be 2.
+    The first cell is the GPIO number.
+    The second cell is used to specify flags:
+        bits[3:0] trigger type and level flags:
+            1 = low-to-high edge triggered.
+            2 = high-to-low edge triggered.
+            4 = active high level-sensitive.
+            8 = active low level-sensitive.
+            Valid combinations are 1, 2, 3, 4, 8.
+
+- interrupt-parent:
+    phandle referencing the parent interrupt controller
+
+- interrupts:
+    The interrupt output from the controller.
+
+- interrupt-controller:
+    Marks the device node as an interrupt controller.
+
+- brcm,num-gpio-pins:
+    The total number of GPIO pins. Each of these pins can also be configured for
+    an alternate pinmux function.
+
+- brcm,num-pinmux-funcs:
+    The total number of pinmux functions that can be assigned to each GPIO pin.
+
+- brcm,parent-irq-status-bit:
+    The bit in the parent interrupt controller status register representing the
+    IRQ for this GPIO interrupt controller.
+
+- brcm,gpio_irq_slot_assignments:
+    The underlying hardware only allow 6 of the total GPIO's to be configured
+    to provide interrupts at any given time. The assignments are hereafter
+    referred to as slots. This property indicates the slot numbers (0-based)
+    that are reserved for use by Linux running on the router CPU. Those not
+    listed are reserved for use by the rest of the system (the cable modem CPU).
+
+Please refer to ../gpio/gpio.txt for a general description of GPIO bindings.
+
+Optional properties:
+
+Please refer to pinctrl-bindings.txt in this directory for details of the
+common pinctrl bindings used by client devices, including the meaning of the
+phrase "pin configuration node".
+
+- pinctrl-names:
+    Names of the various pinctrl states specified by the pinctrl-0, pinctrl-1, etc
+    properties. The pinctrl-0 prioerty should be names "default" as this is the
+    property that is instantiated during the pinctrl subsystem initialization
+    during boot.
+
+- pinctrl-xxx:
+    pinctrl-0, pinctrl-1, etc. Each pinctrl-xxx specifies an array of pin
+    configuration node phandles. The array of phandles specifies a pinctrl state
+    that can be configured via the pinctrl subsystem API. pinctrl-0 is the default
+    pinctrl state that is set during the pinctrl subsystem init at boot.
+
+Pin configuration subnode properties:
+
+Each pin configuration node lists the pin(s) to which it applies and one or
+more of the mux function to select on those pin(s).
+
+- brcm,pins: An array of cells. Each cell contains the ID of a pin. Valid IDs
+  are the integer GPIO IDs; 0==GPIO0, 1==GPIO1, ... 53==GPIO53.
+
+- brcm,function: Integer, containing the function to mux to the pin(s):
+    0: function 0
+    1: function 1
+    2: function 2
+    3: function 3
+    4: function 4
+    5: function 5 (GPIO)
+    6: function 6
+    7: function 7
+    Each of the brcm,function properties may contain either a single value which
+    will be applied to all pins in brcm,pins, or a value for each entry in
+    brcm,pins.
+
+Example:
+
+        pinctrl_gpio: pinctrl_gpio@14e00100 {
+                compatible = "brcm,bcm3384-pinctrl-gpio";
+                reg = <0x14e00100 0x2c>,        /* GPIO direction regs          */
+                      <0x14e0012c 0x2c>,        /* GPIO data regs               */
+                      <0x14e0029c 0x14>,        /* GPIO mux regs                */
+                      <0x14e00080 0x4>,         /* GPIO mux readback reg        */
+                      <0x104b00f8 0x4>,         /* MBOX cfg reg (HW spinlock)   */
+                      <0x14e0006c 0x4>,         /* GPIO IRQ ctrl reg            */
+                      <0x14e00098 0x4>,         /* GPIO IRQ mux lo reg          */
+                      <0x14e003f4 0x4>,         /* GPIO IRQ mux hi reg          */
+                      <0x104b0064 0x4>;         /* G2U ZMIPS IRQ status reg     */
+                #gpio-cells = <0x2>;
+                gpio-controller;
+                brcm,num-gpio-pins = <147>;
+                brcm,num-pinmux-funcs = <8>;
+                #interrupt-cells = <2>;
+                interrupt-parent = <&zmips_intc>;
+                interrupts = <14>;
+                interrupt-controller;
+                brcm,parent-irq-status-bit = <14>;
+                brcm,gpio_irq_slot_assignments = <3 4 5>;
+
+                pinctrl-names = "default";
+                pinctrl-0 = <&wifi_pwr_ctrl
+                             &ethsw_mdio &ethsw_rgmii &ethsw_spi &ethsw_pwr_ctrl
+                             &wifi_wps>;
+                wifi_pwr_ctrl: wifi_pwr_ctrl {
+                        brcm,pins = <4 5>;
+                        brcm,function = <5>; /* GPIO */
+                };
+                ethsw_mdio: ethsw_mdio {
+                        brcm,pins = <38 39>;
+                        brcm,function = <4>; /* MDIO */
+                };
+                ethsw_rgmii: ethsw_rgmii {
+                        brcm,pins = <54 55 56 57 58 59 60 61 62 63 64 65>;
+                        brcm,function = <1>; /* RGMII */
+                };
+                ethsw_spi: ethsw_spi {
+                        brcm,pins = <84 85 86 89>;
+                        brcm,function = <0 0 0 1>; /* SPI */
+                };
+                ethsw_pwr_ctrl: ethsw_pwr_ctrl {
+                        brcm,pins = <14>;
+                        brcm,function = <5>; /* GPIO */
+                };
+                wifi_wps: wifi_wps {
+                        brcm,pins = <6 7 40>;
+                        brcm,function = <5>; /* GPIO */
+                };
+        };

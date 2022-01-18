@@ -1,0 +1,396 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390b0)";
+	compatible = "brcm,bcm3390b0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier@0 {
+			    /* chip id    mfg id     park       */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000001 >;
+			     /* any board */
+		boardid_msk = < 0x00 >;
+		boardid_val = < 0x00 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     park       */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000001 >;
+			     /* any board */
+		boardid_msk = < 0x00 >;
+		boardid_val = < 0x00 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&pmb0 {
+	bpcm@0x0 {
+		compatible = "brcm,bpcm";
+		reg = <0x0>;
+		dev-name = "bpcm-dtp";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x1 {
+		compatible = "brcm,bpcm";
+		reg = <0x1>;
+		dev-name = "bpcm-dfap";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x2 {
+		compatible = "brcm,bpcm";
+		reg = <0x2>;
+		dev-name = "bpcm-d3dsmac32";
+		zones = <6>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x3 {
+		compatible = "brcm,bpcm";
+		reg = <0x3>;
+		dev-name = "bpcm-dsmacofda";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x4 {
+		compatible = "brcm,bpcm";
+		reg = <0x4>;
+		dev-name = "bpcm-dsmacofdb";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm_utp: bpcm@0x5 {
+		status = "disabled";	/* Causes bus hang on B0 so disable for all */
+		compatible = "brcm,bpcm";
+		reg = <0x5>;
+		dev-name = "bpcm-utp";
+		zones = <5>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x6 {
+		compatible = "brcm,bpcm";
+		reg = <0x6>;
+		dev-name = "bpcm-periph";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x7 {
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xa {
+		compatible = "brcm,bpcm";
+		reg = <0xa>;
+		dev-name = "bpcm-apm";
+		zones = <6>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xb {
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xc {
+		compatible = "brcm,bpcm";
+		reg = <0xc>;
+		dev-name = "bpcm-usmac";
+		zones = <13>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xd {
+		compatible = "brcm,bpcm";
+		reg = <0xd>;
+		dev-name = "bpcm-tc8x";
+		zones = <9>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xe {
+		compatible = "brcm,bpcm";
+		reg = <0xe>;
+		dev-name = "bpcm-tcofdm";
+		zones = <5>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x10 {
+		compatible = "brcm,bpcm";
+		reg = <0x10>;
+		dev-name = "bpcm-mips";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x11 {
+		compatible = "brcm,bpcm";
+		reg = <0x11>;
+		dev-name = "bpcm-ustop";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x12 {
+		compatible = "brcm,bpcm";
+		reg = <0x12>;
+		dev-name = "bpcm-leap";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+
+	bpcm@0x13 {
+		compatible = "brcm,bpcm";
+		reg = <0x13>;
+		dev-name = "bpcm-emc";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+};
+
+&pmb1 {
+	bpcm@0x0 {
+		zone-init-pwr = <0x0>;
+	};
+};
+
+&cpu1 {
+	status = "disabled";
+};
+
+&pcie0 {
+	status = "disabled";
+};
+
+&pcie1 {
+	status = "disabled";
+};
+
+&pcie2 {
+	status = "disabled";
+};
+
+&usb_phy0 {
+	status = "disabled";
+};
+
+&ehci_v2_0 {
+	status = "disabled";
+};
+
+&ohci_v2_0 {
+	status = "disabled";
+};
+
+&xhci_v2_0 {
+	status = "disabled";
+};
+
+&usb_phy1 {
+	status = "disabled";
+};
+
+&ehci_v2_1 {
+	status = "disabled";
+};
+
+&ohci_v2_1 {
+	status = "disabled";
+};
+
+&xhci_v2_1 {
+	status = "disabled";
+};
+
+&bdc_v2_1 {
+	status = "disabled";
+};
+
+&usb0 {
+	status = "disabled";
+};
+
+&ehci0 {
+	status = "disabled";
+};
+
+&ohci0 {
+	status = "disabled";
+};
+
+&xhci0 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+};
+
+&ehci1 {
+	status = "disabled";
+};
+
+&ohci1 {
+	status = "disabled";
+};
+
+&xhci1 {
+	status = "disabled";
+};
+
+&bdc1 {
+	status = "disabled";
+};
+
+&sdhci0 {
+	status = "disabled";
+};
+
+&sdhci1 {
+	status = "disabled";
+};
+
+&spi0 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&rf4ce {
+	status = "disabled";
+	/* Old BOLT versions will set the above status to "ok" for all platforms,
+	so add another property for new software images to discern whether
+	status property is to be obeyed. Only valid platforms have this new property
+	set correctly to "true". */
+	trust-status = "false";
+};
+
+&pwm0 {
+	status = "disabled";
+};
+
+&pwm1 {
+	status = "disabled";
+};
+
+&fpm {
+	status = "disabled";
+};
+
+&dqm {
+	status = "disabled";
+};
+
+&rpcrgcm {
+	status = "disabled";
+};
+
+&rpcsvmcm {
+	status = "disabled";
+};
+
+&qchan0 {
+	status = "disabled";
+};
+
+&qchan1 {
+	status = "disabled";
+};
+
+&rfapskb {
+	status = "disabled";
+};
+
+&mdqmrx0 {
+	status = "disabled";
+};
+
+&mdqmrx1 {
+	status = "disabled";
+};
+
+&mdqmrx2 {
+	status = "disabled";
+};
+
+&mdqmtx {
+	status = "disabled";
+};
+
+&priv0 {
+	status = "disabled";
+};
+
+&eth0 {
+	status = "disabled";
+};
+
+&eth1 {
+	status = "disabled";
+};
+
+&eth2 {
+	status = "disabled";
+};
+
+&eth3 {
+	status = "disabled";
+};
+
+&cm0 {
+	status = "disabled";
+};
+
+&miimdiomux {
+	status = "disabled";
+};
+
+&unimac_mdio {
+	status = "disabled";
+};
+
+&ethsw {
+	status = "disabled";
+};
+
+&runner {
+	status = "disabled";
+};
+
+&suntop_pmx {
+	status = "disabled";
+};
+
+&i2c {
+	status = "disabled";
+};
+
+&wbid {
+	status = "disabled";
+};

@@ -1,0 +1,81 @@
+#
+# Broadcom Proprietary and Confidential. (c) 2016 Broadcom.  All rights reserved.
+# The term "Broadcom" refers to Broadcom Limited and/or its subsidiaries.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+KERNEL_BUILD_TARGET=zImage
+
+.PHONY: initrd_kernel
+# targets "kernel" and "initrd_kernel" should not be build in parallel since
+# they build mostly the same source. Encoutered tmp file errors when building
+# them at the same time. Hence "kernel" dependency below.
+initrd_kernel_deps = kernel_mods kernel rootfs extmods
+initrd_kernel: $(initrd_kernel_deps)
+	$(call print_start_banner)
+	$(MAKE) -C $(LINUXDIR) SUBDIRS= ARCH=$(ARCH) zImage
+	$(CFG) noinitramfs
+	cp -f $(LINUXDIR)/arch/$(ARCH)/boot/zImage $(IMAGESDIR)/vmlinuz-initrd-$(PLAT)$(KSUFFIX)
+	$(call print_stop_banner)
+
+.PHONY: userspace_img
+userspace_img_deps =
+userspace_img: $(userspace_img_deps)
+	$(call print_start_banner)
+	@TOOLSDIR=$(RGTOOLSDIR) TFTPDIR=$(TFTPDIR) APPSDIR=$(RGAPPS_INSTDIR) \
+	  ROOTFSDIR=$(ROMFSDIR) IMGTYPE=rguapps ARCH=$(ARCH) bin/packageit.sh
+	@APPSDIR=$(RGAPPS_INSTDIR) KSUFFIX=$(KSUFFIX) bin/build_3390_images.sh
+	@cp -fu $(RGTOOLSDIR)/go.sh $(IMAGESDIR)
+	$(call print_stop_banner)
+
+.PHONY: kernel_img
+kernel_img_deps = kernel
+kernel_img: $(kernel_img_deps)
+	$(call print_start_banner)
+	cp -f $(LINUXDIR)/arch/$(ARCH)/boot/zImage $(IMAGESDIR)/vmlinuz-$(PLAT)$(KSUFFIX)
+	$(call print_stop_banner)
+
+.PHONY: dtb_img
+dtb_img_deps = dtb
+dtb_img: $(dtb_img_deps)
+	$(call print_start_banner)
+	@mkdir -p $(IMAGESDIR)
+	cp  $(LINUXDIR)/arch/$(ARCH)/boot/dts/*.dtb $(IMAGESDIR)
+	if [ -d "$(BLDTOPDIR)/tools/brcm-dt" ]; then \
+		$(MAKE) -C $(BLDTOPDIR)/tools/brcm-dt; \
+		for dtb in $(IMAGESDIR)/rg.*.dtb; do \
+			dtb_base=$$(basename $${dtb} ); \
+			$(BLDTOPDIR)/tools/brcm-dt/dteditor $${dtb} chosen setprop filename $${dtb_base} || exit 0; \
+		done; \
+	fi
+ifneq (,$(findstring -lattice,$(PLAT)))
+	$(eval DTB_TAR_NAME_BASE=$(PLAT)$(KSUFFIX))
+else ifneq (,$(findstring -cms,$(PLAT)))
+	$(eval DTB_TAR_NAME_BASE=$(PLAT)$(KSUFFIX))
+else
+	$(eval DTB_TAR_NAME_BASE=$(REAL_PLAT)$(KSUFFIX))
+endif
+	$(eval PRIMARY_DTBS=rg.3390*-smwvg.dtb rg.3390*-wvg.dtb rg.3390*cm.dtb rg.3390*-park.dtb rg.3390*-batt.dtb rg.3390z0-vcms.dtb)
+	$(eval PRIMARY_DTB_TAR_NAME=rg.$(DTB_TAR_NAME_BASE).dtb.tgz)
+	$(eval ALT1_DTBS=rg.3390*cms.dtb)
+	$(eval ALT1_DTB_TAR_NAME=rg.$(DTB_TAR_NAME_BASE)_VCMS.dtb.tgz)
+	$(eval ALT2_DTBS=rg.3390*-sv.dtb rg.3390*-mwvg.dtb rg.3390z0-cbr8.dtb rg.3390*-park.dtb rg.3390*-batt.dtb)
+	$(eval ALT2_DTB_TAR_NAME=rg.$(DTB_TAR_NAME_BASE)_ALT.dtb.tgz)
+	cd $(IMAGESDIR); \
+	tar -czf $(PRIMARY_DTB_TAR_NAME) $(PRIMARY_DTBS) ; \
+	tar -czf $(ALT1_DTB_TAR_NAME) $(ALT1_DTBS) ; \
+	tar -czf $(ALT2_DTB_TAR_NAME) $(ALT2_DTBS) ;
+	$(call print_stop_banner)

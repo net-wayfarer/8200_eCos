@@ -1,0 +1,128 @@
+/include/ "bcm3384_mgw.dtsi"
+
+/ {
+	gfap_dqm: dqm@13c00000 {
+		compatible = "brcm,dqm";
+		reg = <0x13c00000 0x00200000>;
+
+		/* no interrupt line available. tx only */
+
+		dev-name = "gfap";
+
+		l1-irq-mask-offset	= <0x1008>;
+		l1-irq-status-offset	= <0x100c>;
+		l1-irq-dqm-mask		= <0x04000000>;
+
+		cfg-offset		= <0x1800>;
+		lwm-irq-mask-offset	= <0x182c>;
+		lwm-irq-status-offset	= <0x1830>;
+		ne-irq-mask-offset	= <0x1814>;
+		ne-irq-status-offset	= <0x1818>;
+		ne-status-offset	= <0x1820>;
+
+		q-ctl-base-offset	= <0x1a00>;
+		q-data-base-offset	= <0x1c00>;
+		q-status-base-offset	= <0x1f00>;
+
+		fpm-alloc-offset	= <0x0000>;
+		q-count			= <32>;
+		cfg-qsm			= <0>;
+		qsm-size		= <0x3000>;
+	};
+
+	g2u_dqm: dqm@151f8000         {
+		compatible = "brcm,dqm";
+		reg = <0x151f8000 0x8000>;
+		interrupt-parent = <&periph_intc>;
+		interrupts = <30>;
+
+		dev-name = "g2u";
+
+		l1-irq-mask-offset	= <0x0048>;
+		l1-irq-status-offset	= <0x004c>;
+		l1-irq-dqm-mask		= <0x00400000>;
+
+		cfg-offset		= <0x0380>;
+		lwm-irq-mask-offset	= <0x0388>;
+		lwm-irq-status-offset	= <0x03a0>;
+		ne-irq-mask-offset	= <0x03c8>;
+		ne-irq-status-offset	= <0x03e0>;
+		ne-status-offset	= <0x03e8>;
+		fpm-alloc-offset	= <0x0000>;
+
+		q-ctl-base-offset	= <0x0400>;
+		q-data-base-offset	= <0x0800>;
+		q-status-base-offset	= <0x0b00>;
+
+		q-count			= <32>;
+		cfg-qsm			= <0>;
+		qsm-size		= <0x1000>;
+	};
+
+	rpclv2cm: rpclv2cm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "linux-to-cm";
+		dqm = "g2u";
+		tx-q = <0>;
+		rx-q = <1>;
+	};
+
+	rpclv2rg: rpclv2rg {
+		compatible = "brcm,itc-rpc";
+		dev-name = "linux-to-rg";
+		dqm = "g2u";
+		tx-q = <14>;
+		rx-q = <15>;
+	};
+
+	qchan0: q-channel0 {
+		dev-name = "gfap-linux";
+		tx_dqm = "gfap";
+		rx_dqm = "g2u";
+		tx-q = <12>;
+		rx-q = <4>;
+		rx-indicate-offset = <0x0f10>;
+		rx-indicate-device = <&gfap_dqm>;
+		type = "accelerator-host";
+		q-msg-fmt = "gfap-fpm";
+	};
+
+	qchan1: q-channel1 {
+		dev-name = "ecos-linux";
+		dqm = "g2u";
+		tx-q = <13>;
+		rx-q = <12>;
+		type = "point-to-point";
+		q-msg-fmt = "gfap-fpm";
+	};
+
+	eth0: ethernet0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth0";
+		mac-id = <0>;
+		mac-sub-id = <0>;
+		demux = "none";
+		link-type = "rpc";
+		rpc-channel = <&rpclv2cm>;
+	};
+
+	eth1: ethernet1 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan1>;
+		dev-name = "eth1";
+		mac-id = <0>;
+		mac-sub-id = <0>;
+		demux = "none";
+		link-type = "rpc";
+		rpc-channel = <&rpclv2cm>;
+	};
+
+	vflashclient {
+		compatible = "brcm,brcm-vflashclient";
+		brcm-resrv;
+		reg = <0x04000000 0x400000>;
+		client_id = <0>;
+		rpc_channel = <&rpclv2cm>;
+	};
+};

@@ -1,0 +1,32 @@
+/dts-v1/;
+
+/include/ "bcm3384_zephyr.dtsi"
+
+/ {
+	compatible = "brcm,bcm93384ecm", "brcm,bcm3384";
+	model = "Broadcom BCM933843ECM";
+	subsystem = "rg_2nd_core";
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+		stdout-path = &uart0;
+	};
+	board_id {
+		product_name = "BCM933843ECM";
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+
+/include/ "bcm33843ecm_mgw_zephyr.dtsi"

@@ -1,0 +1,337 @@
+/********************************************************************
+ * The nodes that appear below are chip specific additions and
+ * replacements to the rg.3390b0-bolt.dtsi file.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&usb_phy1 {
+	status = "disabled";
+};
+
+&ehci_v2_1 {
+	status = "disabled";
+};
+
+&ohci_v2_1 {
+	status = "disabled";
+};
+
+&xhci_v2_1 {
+	status = "disabled";
+};
+
+&bdc_v2_1 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+};
+
+&ehci1 {
+	status = "disabled";
+};
+
+&ohci1 {
+	status = "disabled";
+};
+
+&xhci1 {
+	status = "disabled";
+};
+
+&bdc1 {
+	status = "disabled";
+};
+
+&rf4ce {
+	status = "disabled";
+
+	/* Old BOLT versions will set the above status to "ok" for all platforms,
+	so add another property for new software images to discern whether
+	status property is to be obeyed. Only valid platforms have this new property
+	set correctly to "true". */
+	trust-status = "false";
+};
+
+&pcie2 {
+	status = "disabled";
+};
+
+&osc_moca {
+	status = "disabled";
+};
+
+&moca_pdiv {
+	status = "disabled";
+};
+
+&moca_ndiv_int {
+	status = "disabled";
+};
+
+&moca_mdiv_ch2 {
+	status = "disabled";
+};
+
+&moca_dis_ch2 {
+	status = "disabled";
+};
+
+&moca_pdh_ch2 {
+	status = "disabled";
+};
+
+&mocamac_54 {
+	status = "disabled";
+};
+
+&mocamac_gisb {
+	status = "disabled";
+};
+
+&mocamac_scb {
+	status = "disabled";
+};
+
+&mocaphy_54 {
+	status = "disabled";
+};
+
+&moca_mdiv_ch0 {
+	status = "disabled";
+};
+
+&moca_dis_ch0 {
+	status = "disabled";
+};
+
+&moca_pdh_ch0 {
+	status = "disabled";
+};
+
+&moca_mdiv_ch1 {
+	status = "disabled";
+};
+
+&moca_dis_ch1 {
+	status = "disabled";
+};
+
+&moca_pdh_ch1 {
+	status = "disabled";
+};
+
+&sw_moca {
+	status = "disabled";
+};
+
+&lc_pwrdn_req {
+	status = "disabled";
+};
+
+&moca_pwrdn_req {
+	status = "disabled";
+};
+
+&hif_sdio_card {
+	status = "disabled";
+};
+
+&hif_sdio_emmc {
+	status = "disabled";
+};
+
+&sys0_pll_pdiv {
+	status = "disabled";
+};
+
+&sys0_pll_ndiv_int {
+	status = "disabled";
+};
+
+&sys0_pll_mdiv_ch0 {
+	status = "disabled";
+};
+
+&sys0_pll_dis_ch0 {
+	status = "disabled";
+};
+
+&sys0_pll_pdh_ch0 {
+	status = "disabled";
+};
+
+&hif_spi {
+	status = "disabled";
+};
+
+&pcie_alwayson {
+	status = "disabled";
+};
+
+&sys1_pll_pdiv {
+	status = "disabled";
+};
+
+&sys1_pll_ndiv_int {
+	status = "disabled";
+};
+
+&sys1_pll_mdiv_ch4 {
+	status = "disabled";
+};
+
+&sys1_pll_dis_ch4 {
+	status = "disabled";
+};
+
+&sys1_pll_pdh_ch4 {
+	status = "disabled";
+};
+
+&pcie_duallane_300 {
+	status = "disabled";
+};
+
+&pcie_rcbypref_100 {
+	status = "disabled";
+};
+
+&pcie_108 {
+	status = "disabled";
+};
+
+&pcie_54 {
+	status = "disabled";
+};
+
+&pcie_gisb {
+	status = "disabled";
+};
+
+&pcie_scb {
+	status = "disabled";
+};
+
+&usb0_27_mdio {
+	status = "disabled";
+};
+
+&usb0_freerun {
+	status = "disabled";
+};
+
+&usb0_54 {
+	status = "disabled";
+};
+
+&usb0_gisb {
+	status = "disabled";
+};
+
+&usb0_scb {
+	status = "disabled";
+};
+
+&usb0_108_ahb {
+	status = "disabled";
+};
+
+&usb0_108_axi {
+	status = "disabled";
+};
+
+&sys0_pll_mdiv_ch2 {
+	status = "disabled";
+};
+
+&sys0_pll_mdiv_ch3 {
+	status = "disabled";
+};
+
+&sys0_pll_mdiv_ch4 {
+	status = "disabled";
+};
+
+&sys1_pll_mdiv_ch0 {
+	status = "disabled";
+};
+
+&sys1_pll_mdiv_ch3 {
+	status = "disabled";
+};
+
+&cpu_pdiv {
+	status = "disabled";
+};
+
+&cpu_ndiv_int {
+	status = "disabled";
+};
+
+&cpu_mdiv_ch0 {
+	status = "disabled";
+};
+
+&lc_pdiv {
+	status = "disabled";
+};
+
+&lc_ndiv_int {
+	status = "disabled";
+};
+
+&lc_mdiv_ch1 {
+	status = "disabled";
+};
+
+&lc_dis_ch1 {
+	status = "disabled";
+};
+
+&lc_pdh_ch1 {
+	status = "disabled";
+};
+
+&lc_mdiv_ch2 {
+	status = "disabled";
+};
+
+&lc_dis_ch2 {
+	status = "disabled";
+};
+
+&lc_pdh_ch2 {
+	status = "disabled";
+};
+
+&rdp_mdiv_ch3 {
+	status = "disabled";
+};
+
+&sw_cpu {
+	status = "disabled";
+};
+
+&sw_mpi {
+	status = "disabled";
+};
+
+&sw_pcie0 {
+	status = "disabled";
+};
+
+&sw_sdio {
+	status = "disabled";
+};
+
+&sw_usb20 {
+	status = "disabled";
+};
+
+&sw_usb30 {
+	status = "disabled";
+};

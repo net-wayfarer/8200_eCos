@@ -1,0 +1,314 @@
+#
+# Broadcom Proprietary and Confidential. (c) 2016-2017 Broadcom.  All rights reserved.
+# The term "Broadcom" refers to Broadcom Limited and/or its subsidiaries.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+.PHONY: menuconfig-linux menuconfig-vendor menuconfig-uclibc \
+	menuconfig-busybox xconfig-linux
+
+menuconfig-linux:
+	$(MAKE) -C $(LINUXDIR) ARCH=$(ARCH) menuconfig
+
+menuconfig-vendor:
+	$(MAKE) -C $(ROOTDIR)/config menuconfig
+
+menuconfig-uclibc:
+	$(MAKE) -C $(ROOTDIR)/lib/uClibc menuconfig
+
+menuconfig-busybox:
+	$(MAKE) -C $(ROOTDIR)/user/busybox menuconfig
+
+xconfig-linux: .target
+	$(MAKE) -C $(LINUXDIR) ARCH=$(ARCH) xconfig
+
+.PHONY: save_defaults
+save_defaults: .target
+	$(CFG) save_defaults $(PLAT)
+
+.PHONY: install
+install:
+	mkdir -p $(TFTPDIR)
+	$(COPY_HELPER) images/* $(TFTPDIR)/
+	@echo ""
+	@echo "Images have been copied to $(TFTPDIR)"
+	@echo ""
+
+.PHONY: wifi_force
+wifi_force: .target $(RGAPPSDIR)
+	$(MAKE) -s -C $(RGAPPSDIR) $(RGOPTS) wlmodule_force
+
+setversion-%:
+	@tools/set_extraversion.pl "-$*"
+	@echo "Setting Release Version: $*"
+
+# The code below allows any target that uses <target_name>_deps variable to be
+# forced to build without its prerequisites if invoked as <target_name>_ND.
+.DEFAULT:
+	@if grep -q ^$(subst _ND,,$@): Makefile*; then \
+		echo "building target \"$(subst _ND,,$@)\" without dependencies"; \
+		$(MAKE) $(subst _ND,,$@)_deps="" $(subst _ND,,$@); \
+	else \
+		echo "target \"$@\" does not exist"; \
+	fi
+
+.PHONY: cms_prebuilt wifi_prebuilt lattice_release netxl_prebuilt
+cms_prebuilt:
+	@$(MAKE) -j1 -s -S -C $(RGAPPSDIR) $(RGOPTS) cms_prebuilt
+
+wifi_prebuilt:
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) $(WIFIOPTS) rgapps kernel wifi_mods
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) $(WIFIOPTS) rgapps-wifi_tarball
+
+lattice_release:
+	@$(MAKE) -j1 -s -S -C $(RGAPPSDIR) $(RGOPTS) lattice_release
+
+netxl_prebuilt:
+	$(MAKE) -j1 -s -S -C $(RGAPPSDIR) netxl_prebuilt
+
+# rule to allow a single app in the userspace to be recompiled.
+rgapps-%:
+	$(MAKE) -j1 -s -S -C $(RGAPPSDIR) $(RGOPTS) $*
+
+.PHONY: git_clean
+git_clean:
+	@for repo in . rootfs rg_apps linux aeolus; do git -C $$repo clean -xfd; done
+
+######   GPL Release Targets #####
+# The following targets are used to generate a release of the GPL code that is included with the Linux eRouter
+# This would be required if a request was made for GPL code according to the GPL requirements.  There are two key
+# build targets.  The first, GPL_prep, creates a tarball of the GPL code.  It removes all of the non-GPL components
+# of the code and tars up what is left.  This creates a tarball named GPL_Release.tgz.  This is the tarball that would
+# be released for a GPL request.
+# The second target, GPL_only, builds the GPL portions of the code. This will build from an untarred code set from the
+# GPL_Release tarball. Use of this target should be included in the instructions sent with a GPL release. The resulting
+# images will be in the image directory as normal.
+#
+# To create the GPL release tarball:
+# make defaults-3390b0 GPL_prep
+# or
+# make defaults-3384b0 GPL_prep
+#
+# Instructions to accompany a GPL release, build as follows:
+# make defaults-3390b0 GPL_only
+# or
+# make defaults-3384b0 GPL_prep
+#
+# NOTE: These GPL targets work for the Broadcom reference release.  If customers follow the instructions for GPL source code,
+# including general Linux standards and the instructions in the CMS Users Guide, then these GPL targets should also work in
+# cases where additional code has been added to the Broadcom reference release.
+##################################
+.PHONY: GPL_only GPL_prep
+
+#This target does a build of only the GPL code
+GPL_only:
+	sed -i 's/CONFIG_USER_BRCM_HYP=y/# CONFIG_USER_BRCM_HYP is not set/' rootfs/config/.config
+	sed -i 's/CONFIG_USER_BRCM_BOOT_ASSIST=y/# CONFIG_USER_BRCM_BOOT_ASSIST is not set/' rootfs/config/.config
+	sed -i 's/CONFIG_USER_BRCM_DT=y/# CONFIG_USER_BRCM_DT is not set/' rootfs/config/.config
+
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) kernel
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) kernel_mods
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) rootfs
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR) kernellinks $(RGOPTS)
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR) create_install $(RGOPTS)
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR)/userspace/public/include $(RGOPTS)
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR)/userspace/public/libs $(RGOPTS)
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR)/userspace/gpl/libs $(RGOPTS)
+	#Note that this build uses -j 1 because the parallel build exposes dependancy problems that are handled in the all: build target but not
+	#in the GPL_only: target
+	$(MAKE) -j 1  -C $(RGAPPSDIR)/userspace/gpl/apps $(RGOPTS)
+	$(MAKE) kernel_img
+	$(MAKE) dtb_img
+	$(MAKE) rootfs
+	$(MAKE) userspace_img_ND
+
+
+#This target prepares the GPL code and creates a GPL release tarball
+GPL_prep:
+	rm -rf $(RGAPPSDIR)/bcmdrivers/broadcom
+	rm -rf $(RGAPPSDIR)/bcmdrivers/Makefile
+	rm -rf $(RGAPPSDIR)/bcmdrivers/opensource/net
+	rm -rf $(RGAPPSDIR)/bcmdrivers/opensource/char
+
+	#need to build data model to get mdm_*.h
+	$(MAKE) -j $(ACTUAL_MAX_JOBS)  -C $(RGAPPSDIR) data-model
+	rm -rf $(RGAPPSDIR)/data-model
+	#need to make brcm_entropy
+	$(MAKE) -j $(ACTUAL_MAX_JOBS) $(RGOPTS) -C $(RGAPPSDIR) userspace-private-libs-brcm_entropy
+	cp $(RGAPPSDIR)/userspace/private/libs/brcm_entropy/brcm_entropy.o .
+	rm -rf $(RGAPPSDIR)/userspace/private
+	mkdir -p $(RGAPPSDIR)/userspace/private/libs/brcm_entropy
+	mv ./brcm_entropy.o $(RGAPPSDIR)/userspace/private/libs/brcm_entropy/brcm_entropy.o
+	rm -rf $(RGAPPSDIR)/shared/broadcom
+	rm -rf $(RGAPPSDIR)/shared/opensource/bcm968500/
+	rm -rf $(RGAPPSDIR)/shared/opensourc/boardparms/
+	rm -rf $(RGAPPSDIR)/shared/opensource/flash/
+	rm -rf $(RGAPPSDIR)/shared/opensource/spi/
+	rm -rf $(RGAPPSDIR)/shared/opensource/utils/
+	rm -rf $(RGAPPSDIR)/unittests
+	rm -rf $(RGAPPSDIR)/bootloaders
+	rm -rf $(RGAPPSDIR)/docs
+	rm -rf $(RGAPPSDIR)/lattice
+	rm -rf $(RGAPPSDIR)/release
+	rm -rf $(RGAPPSDIR)/hostTools
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/cups-patch/
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/cups-1.5.0-source.tar.bz2
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libiconv-patch/
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libiconv-1.12.tar.gz
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libxml2-patch/
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libxml2-2.6.32.tar.gz
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libpng-patch
+	rm -rf $(RGAPPSDIR)/userspace/gpl/apps/libpng-1.2.29.tar.gz
+	rm -rf rootfs/user/affinity
+	rm -rf rootfs/user/agetty
+	rm -rf rootfs/user/at
+	rm -rf rootfs/user/bonnie++
+	rm -rf rootfs/user/brcm-wpsctl
+	rm -rf rootfs/user/cal
+	rm -rf rootfs/user/chat_affinity
+	rm -rf rootfs/user/cksum
+	rm -rf rootfs/user/clock
+	rm -rf rootfs/user/cmatool
+	rm -rf rootfs/user/cpu
+	rm -rf rootfs/user/cramfs
+	rm -rf rootfs/user/cron
+	rm -rf rootfs/user/dhcpcd
+	rm -rf rootfs/user/dhcpv6
+	rm -rf rootfs/user/dhrystone
+	rm -rf rootfs/user/discard
+	rm -rf rootfs/user/dmalloc
+	rm -rf rootfs/user/dropbear
+	rm -rf rootfs/user/epi_ttcp
+	rm -rf rootfs/user/ethctl
+	rm -rf rootfs/user/fileutils
+	rm -rf rootfs/user/frob
+	rm -rf rootfs/user/fswcert
+	rm -rf rootfs/user/ftp
+	rm -rf rootfs/user/games
+	rm -rf rootfs/user/gdb
+	rm -rf rootfs/user/gettyd
+	rm -rf rootfs/user/hd
+	rm -rf rootfs/user/hdparm
+	rm -rf rootfs/user/hotplug
+	rm -rf rootfs/user/httpd
+	rm -rf rootfs/user/hwclock
+	rm -rf rootfs/user/ifattach
+	rm -rf rootfs/user/inetd
+	rm -rf rootfs/user/inetutils
+	rm -rf rootfs/user/init
+	rm -rf rootfs/user/ipchains
+	rm -rf rootfs/user/ipfwadm
+	rm -rf rootfs/user/ipmasqadm
+	rm -rf rootfs/user/ipportfw
+	rm -rf rootfs/user/ipredir
+	rm -rf rootfs/user/iproute2
+	rm -rf rootfs/user/iptables
+	rm -rf rootfs/user/iptraf
+	rm -rf rootfs/user/klaxon
+	rm -rf rootfs/user/l2tpd
+	rm -rf rootfs/user/lcd
+	rm -rf rootfs/user/login
+	rm -rf rootfs/user/lttcontrol
+	rm -rf rootfs/user/lxc
+	rm -rf rootfs/user/mawk
+	rm -rf rootfs/user/mini_httpd
+	rm -rf rootfs/user/moca
+	rm -rf rootfs/user/moca2
+	rm -rf rootfs/user/mount
+	rm -rf rootfs/user/musicbox
+	rm -rf rootfs/user/net
+	rm -rf rootfs/user/netstat
+	rm -rf rootfs/user/ntfs3g
+	rm -rf rootfs/user/null
+	rm -rf rootfs/user/nwsh
+	rm -rf rootfs/user/oprofile
+	rm -rf rootfs/user/pciutils
+	rm -rf rootfs/user/pcmcia
+	rm -rf rootfs/user/perf-tools
+	rm -rf rootfs/user/ping
+	rm -rf rootfs/user/play
+	rm -rf rootfs/user/playrt
+	rm -rf rootfs/user/plug
+	rm -rf rootfs/user/pppd
+	rm -rf rootfs/user/python
+	rm -rf rootfs/user/rdate
+	rm -rf rootfs/user/readprofile
+	rm -rf rootfs/user/recover
+	rm -rf rootfs/user/root_sign
+	rm -rf rootfs/user/route
+	rm -rf rootfs/user/routed
+	rm -rf rootfs/user/rp
+	rm -rf rootfs/user/setserial
+	rm -rf rootfs/user/sh
+	rm -rf rootfs/user/snmpd
+	rm -rf rootfs/user/stty
+	rm -rf rootfs/user/sysutils
+	rm -rf rootfs/user/tcpblast
+	rm -rf rootfs/user/tcpwrappers
+	rm -rf rootfs/user/telnet
+	rm -rf rootfs/user/telnetd
+	rm -rf rootfs/user/tftp
+	rm -rf rootfs/user/tftpd
+	rm -rf rootfs/user/tinylogin
+	rm -rf rootfs/user/tip
+	rm -rf rootfs/user/tracecmd
+	rm -rf rootfs/user/traceroute
+	rm -rf rootfs/user/ttcp
+	rm -rf rootfs/user/utelnetd
+	rm -rf rootfs/user/utillinux
+	rm -rf rootfs/user/version
+	rm -rf rootfs/user/wget
+	rm -rf rootfs/user/wireless_tools
+	rm -rf rootfs/user/xfsprogs
+	rm -rf rootfs/user/brcm-boltenv
+	rm -rf rootfs/user/brcm-pm
+	rm -rf rootfs/user/brcm-rnonvol
+	rm -rf rootfs/user/brcm-rprogramstore
+	rm -rf rootfs/user/brcm-boot_assist
+	rm -rf rootfs/user/brcm-dt
+	rm -rf rootfs/user/brcm-hyp
+	rm -rf rootfs/user/brcm-mbox_assist
+	rm -rf rootfs/lib/binutils
+	rm -rf rootfs/lib/directfb
+	rm -rf rootfs/lib/elfutils
+	rm -rf rootfs/lib/freetype
+	rm -rf rootfs/lib/gettext
+	rm -rf rootfs/lib/libatm
+	rm -rf rootfs/lib/libcap
+	rm -rf rootfs/lib/libg
+	rm -rf rootfs/lib/libgmp
+	rm -rf rootfs/lib/libjpeg
+	rm -rf rootfs/lib/libpam
+	rm -rf rootfs/lib/libpng
+	rm -rf rootfs/lib/libtempcap
+	rm -rf rootfs/lib/libuargp
+	rm -rf rootfs/lib/libusb
+	rm -rf rootfs/lib/uclibc
+	rm -rf tools
+	rm -rf docs
+	#remove remnants of building
+	rm .dirty
+	rm .arch
+	rm config.arch
+	rm .target
+	rm -rf images
+	rm linux/.config
+	rm linux/.config.old
+	rm -rf linux/.tmp_versions
+	rm linux/.missing-syscalls.d
+	#Tar up everything that is left, and remove the git directories
+	tar -czf ../GPL_release.tgz . --exclude-vcs --checkpoint=.1000
+	mv ../GPL_release.tgz .

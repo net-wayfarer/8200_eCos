@@ -1,0 +1,33 @@
+Broadcom BCM6328 High-Speed SPI controller
+
+Required properties:
+
+- compatible: Should be "brcm,bcm6328-hsspi"
+- reg: Should contain the register base address and length
+- interrupts: Should contain the interrupt number
+- clocks: The clock feeding this SPI controller
+- clock-names: Should be "hsspi"
+- #address-cells: Must be 1 for child chip-select nodes
+- #size-cells: Must be 0 for child chip-select nodes
+
+Optional sub-nodes:
+
+Example:
+
+spi@b0001000 {
+       compatible = "brcm,bcm6328-hsspi";
+       reg = <0xb0001000 0x600>;
+       interrupts = <29>;
+       clocks = <&hsspi_clock>;
+       clock-names = "hsspi";
+       #address-cells = <1>;
+       #size-cells = <0>;
+
+       flash@0 {
+               compatible = "m25p80";
+               spi-max-frequency = <125000000>;
+               reg = <0>;
+
+               ...
+       };
+};

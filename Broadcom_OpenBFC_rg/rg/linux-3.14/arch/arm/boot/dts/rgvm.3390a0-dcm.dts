@@ -1,0 +1,351 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom RG (3390a0)";
+	vm = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+
+	/* This node will "tweak" the device tree provided by boot loader and passed
+	* down via SVM.
+	* Disabled nodes will still be present, but associated drivers will not load
+	* and resources will not be provided via hypervisor
+	*
+	* Disabled via compatible string:
+	*	brcmnand - NAND, used by SVM
+	*	sdhci-brcmstb - SDHCI, used by SVM
+	*	spi-brcmstb - SPI.. TBD
+	* Enabled via compatible string:
+	*	pci-plat-dev - PCIE
+	*	bmoca-instance - MOCA
+	* Removed by node name:
+	*	svm - all "custom" svm device tree information
+	* Enabled via alias name:
+	*	serial_rg - RG serial port (TBD ENABLE THIS AND REMOVE SERIAL NODE ONCE BOLT IS UPDATED)
+	* Disabled via alias name:
+	*	serial0 - SVM serial port
+	* Disabled by node name:
+	*	usb@f1010200 - USB shared w/ SVM
+	*	pmu - pmu
+	* Enabled by node name:
+	*	usb@f1000200 - USB shared w/ SVM
+	* Disabled L2 interrupt driver:
+	*	hif - Used for NAND w/ SVM
+	*/
+	ba-dt {
+		node-compat-disable="brcm,brcmnand", "brcm,sdhci-brcmstb", "brcm,spi-brcmstb";
+		node-compat-enable="brcm,pci-plat-dev", "brcm,bmoca-instance";
+		node-remove = "/svm";
+		//alias-node-enable = "serial_rg";
+		alias-node-disable = "serial0";
+		node-disable = "/rdb/usb@f1010200", "/pmu";
+		node-enable = "/rdb/usb@f1000200";
+		int-node-disable = "hif";
+	};
+
+	/* TBD... remove this node once bolt which includes "serial_rg" is present.
+	* When present, remove this and add "serial_rg" to "alias-node-enable" in
+	* the "ba-dt" node.
+	*/
+	serial@d3881800 {
+		reg-io-width = <0x4>;
+		reg-shift = <0x2>;
+		clock-frequency = <81000000>;
+		compatible = "ns16550a";
+		reg = <0x0 0xd3881800 0x0 0x20>;
+		interrupts = <0x0 0x4f 0x4>;
+		interrupt-names = "rg_uart";
+	};
+
+	chosen {
+		//bootargs="brcm_cma_low_kern_rsv_pct=100 ubifs_apps jffs2_data debug";
+		//bootargs="brcm_cma_low_kern_rsv_pct=100 ubifs_apps jffs2_data debug ubi.mtd=vf0 root=ubi0:rootfs rootfstype=ubifs skip_smd";
+                //bootargs="brcm_cma_low_kern_rsv_pct=100 ubifs_apps jffs2_data debug ubi.mtd=vf0 root=ubi0:rootfs rootfstype=ubifs";
+		//OLD bootargs="brcm_cma_low_kern_rsv_pct=100  debug ubi.mtd=vf0 root=ubi0:rootfs rootfstype=ubifs skip_smd";
+		bootargs="brcm_cma_low_kern_rsv_pct=100 ubifs_apps jffs2_data debug ubi.mtd=vf0 root=ubi0:rootfs rootfstype=ubifs";
+	};
+
+	memory {
+		reg = <0x0 0x10000000 0x0 0x08000000>;
+//		reg = <0x0 0x80000000 0x0 0x4000000 0x0 0x8C000000 0x0 0x4000000>;
+	};
+
+	rgvm {
+		compatible = "simple-bus";
+		#address-cells = <0x2>;
+		#size-cells = <0x2>;
+		ranges;
+
+
+		brcm-mbox {
+			compatible = "brcm,brcm-mbox";
+			reg = <0x0 0xd3800080 0x0 0x80>, //MBOX_CPUC
+			      <0x0 0xd3800000 0x0 0x80>; //CPU_COMM_REGS_CPUC
+			interrupts = <0 129 0x4>;
+			read = < 0x0000010F >; /* 0,1,2,3,8 */
+			write = < 0x00000004 >; /* 2 */
+		};
+
+		fpm@0xd3a00000 {
+			compatible = "brcm,fpm";
+			reg = <0x0 0x09a00000 0x0 0x02000000>,	/* Free Pool 0	*/
+			      <0x0 0xd3a00000 0x0 0x30133>,	/* Registers	*/
+			      <0x0 0x86000000 0x0 0x02000000>;	/* Free Pool 1	*/
+			init = <0>;
+		};
+
+		dqm@d3800000 {
+			compatible = "brcm,dqm";
+			reg = <0x0 0xd3800000 0x0 0xa580>;
+			interrupts = <0 129 0>;
+
+			dev-name = "cpucomm";
+
+			l1-irq-mask-offset	= <0x0058>;
+			l1-irq-status-offset	= <0x005c>;
+			l1-irq-dqm-mask		= <0x00400000 0x00200000 0x00100000>;
+			token-offset		= <0x1400>;
+
+			cfg-offset		= <0x1c00 0x1c00 0x1c00>;
+			lwm-irq-mask-offset	= <0x1cb4 0x1d44 0x1ddc>;
+			lwm-irq-status-offset	= <0x1ca0 0x1d30 0x1dc8>;
+			ne-irq-mask-offset	= <0x1c60 0x1cd8 0x1d6c>;
+			ne-irq-status-offset	= <0x1c18 0x1cc4 0x1d58>;
+			ne-status-offset	= <0x1c20 0x1cc8 0x1d5c>;
+			fpm-alloc-offset	= <0x1df0 0x1df0 0x1df0>;	/* bug in 3390a0 requires write to prior reg */
+
+			q-ctl-base-offset	= <0x8000 0x8400 0x8800>;
+			q-data-base-offset	= <0x9000 0x9400 0x9800>;
+			q-status-base-offset	= <0x7400 0x7480 0x7500>;
+			q-mib-base-offset       = <0xa000 0xa200 0xa400>;
+
+			q-count			= <96>;
+			cfg-qsm			= <0>;
+			qsm-size		= <0x3000>;
+		};
+
+		rpcrgstb: rpcrgstb {
+			compatible = "brcm,itc-rpc";
+			dev-name = "rg-stb";
+			dqm = "cpucomm";
+			tx-q = <0>;
+			rx-q = <1>;
+		};
+
+		rpcrgcm: rpcrgcm {
+			compatible = "brcm,itc-rpc";
+			dev-name = "rg-cm";
+			dqm = "cpucomm";
+			tx-q = <2>;
+			rx-q = <3>;
+		};
+
+		rpcsvmrg: rpcsvmrg {
+			compatible = "brcm,itc-rpc";
+			dev-name = "svm-rg";
+			dqm = "cpucomm";
+			tx-q = <23>;
+			rx-q = <22>;
+		};
+
+		vflashclient {
+			compatible = "brcm,brcm-vflashclient";
+			reg = <0x0 0x0de00000 0x0 0x400000>;
+			client_id = <0>;
+			rpc_channel = <&rpcsvmrg>;
+		};
+
+		qchan0: q-channel0 {
+			dev-name = "fap-exception";
+
+			#tx-q-cells = <4>;
+			/*	DQM device,	Q#,	Priority	US/DS					*/
+			tx-q =	"cpucomm",	"35",	"0",		"upstream",	/* RG upstream egress	*/
+				"cpucomm",	"34",	"0",		"downstream";	/* RG downstream egress	*/
+			#rx-q-cells = <3>;
+			/*	DQM device,	Q#,	Priority						*/
+			rx-q =	"cpucomm",	"48",	"0";				/* Runner-->RG 0	*/
+
+			type = "fap-exception";
+			q-msg-fmt = "runner";
+		};
+
+		qchan1: q-channel1 {
+			dev-name = "svm-private";
+
+			#tx-q-cells = <3>;
+			/*	DQM device,	Q#,	Priority	US/DS				*/
+			tx-q =	"cpucomm",	"17",	"0";				/* RG-->SVM	*/
+			#rx-q-cells = <3>;
+			/*	DQM device,	Q#,	Priority					*/
+			rx-q =	"cpucomm",	"16",	"0";				/* SVM-->RG	*/
+
+			type = "point-to-point";
+			q-msg-fmt = "gfap";
+		};
+
+		priv1 { /* RG <--> SVM private */
+			compatible = "brcm,dqnet";
+			channel = <&qchan1>;
+			dev-name = "priv1";
+			demux = "none";
+			link-type = "rpc";
+			rpc-channel = <&rpcsvmrg>;
+		};
+
+		//stb0 {
+		//	compatible = "brcm,dqnet";
+		//	channel = <&qchan0>;
+		//	dev-name = "stb0";
+		//	if-id = <55>;		/* rdpa_if_ssid14 */
+		//	demux = "subid";
+		//	link-type = "rpc";
+		//	rpc-channel = <&rpcsvmrg>;
+		//};
+		//
+		//stb1 {
+		//	compatible = "brcm,dqnet";
+		//	channel = <&qchan0>;
+		//	dev-name = "stb1";
+		//	if-id = <56>;		/* rdpa_if_ssid15 */
+		//	demux = "subid";
+		//	link-type = "rpc";
+		//	rpc-channel = <&rpcsvmrg>;
+		//};
+
+		eth0: ethernet0 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "eth0";
+			if-id = <2>;		/* rdpa_if_lan0 */
+			if-sub-id = <0>; /* if-sub-id must match the first column in phy-port node */
+			demux = "subid";
+			link-type = "switch";
+			brcm-tag = <1>;
+		};
+
+		eth1: ethernet1 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "eth1";
+			if-id = <3>;		/* rdpa_if_lan1 */
+			if-sub-id = <1>; /* if-sub-id must match the first column in phy-port node */
+			demux = "subid";
+			link-type = "switch";
+			brcm-tag = <1>;
+		};
+
+		eth2: ethernet2 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "eth2";
+			if-id = <4>;		/* rdpa_if_lan2 */
+			if-sub-id = <2>; /* if-sub-id must match the first column in phy-port node */
+			demux = "subid";
+			link-type = "switch";
+			brcm-tag = <1>;
+		};
+
+		eth3: ethernet3 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "eth3";
+			if-id = <5>;		/* rdpa_if_lan3 */
+			if-sub-id = <3>; /* if-sub-id must match the first column in phy-port node */
+			demux = "subid";
+			link-type = "switch";
+			brcm-tag = <1>;
+		};
+
+		moca0: moca0 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "moca0";
+			if-id = <6>;		// rdpa_if_lan4
+			if-sub-id = <4>; /* if-sub-id must match the first column in phy-port node */
+			demux = "subid";
+			link-type = "switch";
+			brcm-tag = <1>;
+		};
+
+		cm0 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "cm0";
+			if-id = <0>;		/* rdpa_if_wan0 */
+			demux = "subid";
+			link-type = "rpc";
+			rpc-channel = <&rpcrgcm>;
+		};
+
+		ethwan0: ethwan0 {
+			compatible = "brcm,dqnet";
+			channel = <&qchan0>;
+			dev-name = "ethwan0";
+			if-id = <1>;		/* rdpa_if_wan1 */
+			if-sub-id = <0>;
+			demux = "subid";
+			link-type = "ethport";
+		};
+
+		ethport0 {
+			compatible = "brcm,ethport";
+			reg = <0x0 0xd3880000 0x0 0x1000>,
+			      <0x0 0xd3c00500 0x0 0x100>;
+			dev-name   = "ethport0";
+			mac-type   = "unimac";
+			mac-dev    = <&unimac_wan>;
+			phy-type   = "ext-rgmii";
+			phy-id     = <1>;
+			netdev-dev = <&ethwan0>;
+		};
+
+		unimac_wan: unimac@d0400000 {
+			compatible = "brcm,unimac";
+			reg = <0x0 0xd0400000 0x0 0x20000>;
+			interrupts = <0 121 0>,
+				     <0 122 0>;
+			mbdma_reg_offset = <0x0>;
+			unimac_reg_offset = <0x600>;
+			mdio_reg_offset = <0x62c>;
+			id_string = "unimac0";
+			mbdma_use_scb = <0>;
+			mbdma_burst_size = <128>; /* B0 bug limits SCB max burst */
+			external_phy = <1>;
+		};
+
+		ethsw@d4e00000 {
+			compatible = "brcm,ethsw";
+			reg        = <0x0 0xd4e00000 0x0 0x42000>,
+				     <0x0 0xd3c00000 0x0 0x2800>;
+			interrupts = <0 113 0>,
+				     <0 114 0>;
+
+			dev-name   = "ethsw";
+			phy-port   = <0 2>,
+				     <1 3>,
+				     <2 4>,
+				     <3 5>;
+			mii-port   = <4 0 1000>;
+			imp-port   = <5 2000>,
+				     <7 2000>,
+				     <8 2000>;
+			eee-support = <1>;
+			high-speed-imp = <1>;
+		};
+
+		runner@0xd5000000 {
+			compatible = "brcm,rdpa_cm";
+			reg = <0x0 0xd5000000 0x0 0x000fc460>,	/* Registers			*/
+			      <0x0 0x0ba00000 0x0 0x02000000>,	/* Runner Extra Memory 0	*/
+			      <0x0 0x84000000 0x0 0x02000000>,	/* Runner Extra Memory 1	*/
+			      <0x0 0x094ffdd0 0x0 0x00500230>;	/* Runner NAT Cache		*/
+			freq = <800>;			/* MHz				*/
+		};
+
+		/* Kernel has some hard coded stuff for UARTA.... */
+		dummy@f040a900 {
+			reg = <0x0 0xf040a900 0x0 0x1000>;
+		};
+	};
+};

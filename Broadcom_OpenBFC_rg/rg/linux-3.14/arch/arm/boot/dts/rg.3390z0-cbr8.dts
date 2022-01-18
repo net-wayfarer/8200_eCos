@@ -1,0 +1,200 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390z0)";
+	compatible = "brcm,bcm3390z0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier {
+		/* register offset */
+		chipid_reg = < 0x20404000 0x204e6120 >;
+		chipid_msk = < 0xffffffff 0x0000f000 >;
+		chipid_val = < 0x33900060 0x0000a000 >;
+		boardid_msk = < 0x0 >;
+		boardid_val = < 0x0 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390z0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+
+&ethsw {
+	mii-port = <4 0 1000>;
+	rgmii-mode = <1>;
+	sw_p4_phy: phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0>;
+		phy-mode = "rgmii";
+	};
+
+	sw_p5_phy: phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+		phy-mode = "rgmii";
+	};
+	sw_p6_phy: phy@2 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <2>;
+		phy-mode = "rgmii";
+	};
+	sw_p7_phy: phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <3>;
+		phy-mode = "rgmii";
+	};
+};
+
+
+&spi1 {
+	ethsw1@2 {
+		reg = <2>;
+		mdio_reg = <0x0d3c009c0 0x2c000000>;
+		compatible = "brcm,ethsw";
+		spi-max-frequency = <1563000>;
+		dev-name   = "ethsw1";
+		mii-port   = <7 0 1000>;
+		imp-port   = <8 1000>;
+		eee-support = <1>;
+		subid-port-offset = <4>;
+	        pwr-supply = <&vreg_ethsw_pwr>;
+		/*
+		 * Below are references to all possible phy's on the
+		 * external switch chips supported. However, since the
+		 * chips may or may not have the associated port & phy
+		 * bonded out of the chip (i.e. the 53124 does not have
+		 * port 0 bonded out) then they might not all be used.
+		 * 53124 used sw_p1_phy..sw_p4_phy while 53134 uses
+		 * sw_phy0_phy..sw_p3_phy.
+		 */
+		phy-handles = <&sw_p4_phy>,
+			      <&sw_p5_phy>,
+			      <&sw_p6_phy>,
+			      <&sw_p7_phy>;
+
+
+	};
+};
+
+
+
+&suntop_pmx {
+	pinctrl-0 = <&spi_pins &extsw_pins>;
+	spi_pins: spi_pins {
+		pinctrl-single,bits = <
+		0x060 0x10000000 0xf0000000 /* gpio_000 <-- RGMII1_RX_CLK */
+		0x064 0x10000000 0xf0000000 /* gpio_008 <-- RGMII1_TXD_00 */
+		0x064 0x01000000 0x0f000000 /* gpio_007 <-- MII_RXEN_RGMII1_RXCTL */
+		0x064 0x00100000 0x00f00000 /* gpio_006 <-- RGMII1_TX_CLK */
+		0x064 0x00010000 0x000f0000 /* gpio_005 <-- RGMII1_RXD_03 */
+		0x064 0x00001000 0x0000f000 /* gpio_004 <-- RGMII1_RXD_02 */
+		0x064 0x00000100 0x00000f00 /* gpio_003 <-- RGMII1_RXD_01 */
+		0x064 0x00000010 0x000000f0 /* gpio_002 <-- RGMII1_RXD_00 */
+		0x064 0x00000001 0x0000000f /* gpio_001 <-- RGMII1_TXEN_RGMII1_TXCTL */
+		0x068 0x00010000 0x000f0000 /* gpio_013 <-- RGMII1_MDC */
+		0x068 0x00001000 0x0000f000 /* gpio_012 <-- RGMII1_MDIO */
+		0x068 0x00000100 0x00000f00 /* gpio_011 <-- RGMII1_TXD_03 */
+		0x068 0x00000010 0x000000f0 /* gpio_010 <-- RGMII1_TXD_02 */
+		0x068 0x00000001 0x0000000f /* gpio_009 <-- RGMII1_TXD_01 */
+		0x084 0x01000000 0x0f000000 /* gpio_071 <-- SPI_M_SCK  */
+		0x084 0x10000000 0xf0000000 /* gpio_072 <-- SPI_M_MOSI */
+		0x088 0x00000001 0x0000000f /* gpio_073 <-- SPI_M_MISO */
+		0x088 0x00000010 0x000000f0 /* gpio_074 <-- SPI_M_SS0B */
+		0x088 0x00000100 0x00000f00 /* gpio_075 <-- SPI_M_SS1B */
+		0x088 0x00001000 0x0000f000 /* gpio_076 <-- SPI_M_SS2B */
+		>;
+	};
+
+	extsw_pins: extsw_pins {
+		pinctrl-single,bits = <
+		0x06c 0x00000000 0x0000000f /* gpio_017 <-- EXT_SW_PWR */
+		>;
+	};
+};
+
+&miimdiomux {
+	rgmii0-tx-select = "unimac";
+	rgmii1-tx-select = "p4";
+	p7-rx-select = "runner";
+	p4-rx-select = "rgmii1";
+	unimac-rx-select = "rgmii0";
+	unimac-mdio-select = "mdio0";
+	switch-mdio-select = "mdio1";
+};
+
+/ {
+	vreg_ethsw_pwr: vreg-ethsw-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-ethsw-pwr";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&upg_gpio 17 0>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	eth4: ethernet4 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth4";
+		if-id = <6>;		/* rdpa_if_lan5 */
+		if-sub-id = <4>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+		connection-type = "ext_spi";
+		brcm-tag;
+	};
+
+
+	eth5: ethernet5 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth5";
+		if-id = <6>;		/* rdpa_if_lan5 */
+		if-sub-id = <5>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+		connection-type = "ext_spi";
+		brcm-tag;
+	};
+
+	eth6: ethernet6 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth6";
+		if-id = <6>;		/* rdpa_if_lan5 */
+		if-sub-id = <6>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+		connection-type = "ext_spi";
+		brcm-tag;
+	};
+
+	eth7: ethernet7 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth7";
+		if-id = <6>;		/* rdpa_if_lan5 */
+		if-sub-id = <7>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+		connection-type = "ext_spi";
+		brcm-tag;
+	};
+
+
+
+};

@@ -1,0 +1,14 @@
+/ {
+	fpm@0x12200000 {
+		compatible = "brcm,fpm";
+		reg = <0x06000000 0x02000000>,	/* Free Pool 0	*/
+		      <0x12200000 0x14000>;	/* Registers	*/
+		interrupt-parent = <&periph_intc>;
+		interrupts = <49>;
+		init;
+		track-tokens;
+		chunk-size = <512>;
+		net-buf-head-pad = <240>;
+		net-buf-tail-pad = <256>;
+	};
+};

@@ -1,0 +1,113 @@
+Brcmstb PCIe Host Controller Device Tree Bindings
+
+Introduction:
+
+The brcmstb host controller closely follows the example set in
+
+	[1] http://devicetree.org/Device_Tree_Usage#PCI_Host_Bridge
+
+The rest of this document explains some added customizations and
+offers an example Brcmstb PCIe host controller DT node.
+
+Required Properties:
+  reg -- the register start address and length for the PCIe block.
+      Additional start,length pairs may be specified for clock addresses.
+  interrupts -- this must be specified but it is used indirectly.  Interrupt
+      zero must be specified; the Brcmstb driver code uses this interrupt
+      to determine the offset used for all interrupts, specifically, those
+      listed in interrupt-map.
+  compatible -- must specify the string "brcm,pci-plat-dev".
+  #address-cells -- the number of address cells for PCI-space.
+  #size-cells -- the number of size cells for PCI-space.
+  ranges -- See [1]; a specification of the outbound windows for the host
+      controller.  Each outbound window is described by a 7-tuple:
+          (3 entries) -- PCIe space start address (0th entry is ignored).
+          (2 entries) -- CPU/System start address
+          (2 entries) -- Size of region.
+      Due to hardware limitations, there may be a maximum of four windows
+      specified.
+  #interrupt-cells -- number of cells used to describe the interrupt.
+  interrupt-map -- See [1]; each interrupt requires 7 entries, and
+      currently all but the fifth entry (order 0) -- the interrupt
+      number -- is ignored.  There must be four interrupts specified
+      for the PCI's INTA, INTB, INTC, and INTD.
+
+Optional Properties:
+  interrupt-names -- names of the interrupts listed in the interrupt map.
+  clocks -- list of clock phandles.  If specified, this should list one
+      clock.
+  clock-names -- the "local" names of the clocks specified in 'clocks'.  Note
+      that if the 'clocks' property is given, 'clock-names' is mandatory,
+      and the name of the clock is expected to be "sw_pcie".
+  brcm,ssc -- (boolean) indicates usage of spread-spectrum clocking.
+  brcm,gen --  (integer) indicates desired generation of link:
+      1 => 2.5 Gbps, 2 => 5.0 Gbps, 3 => 8.0 Gbps.
+  supply-names -- the names of voltage regulators that the root
+      complex should turn off/on/on on suspend/resume/boot.  This
+      is a string list.
+  supplies -- A collection of phandles to a regulator nodes, see
+	Documentation/devicetree/bindings/regulator/ for specific
+	bindings. The number and order of phandles must match
+	exactly the number of strings in the "supply-names" property.
+
+Example Node:
+
+	pcie0: pcie@f1080000 {
+		ranges = <0x2000000 0x0 0xc0000000 0x0 0xc0000000 0x0 0x8000000>;
+		brcm,log2-scb-sizes = <0x1e>;
+		reg = <0x0 0xf1080000 0x0 0x9310>;
+		interrupts = <0x0 0x0 0x4>;
+		compatible = "brcm,pci-plat-dev";
+		#address-cells = <0x3>;
+		#size-cells = <0x2>;
+		tot-num-pcie = <0x3>;
+		#interrupt-cells = <0x1>;
+		interrupt-map-mask = <0xf800 0x0 0x0 0x7>;
+		interrupt-map = <0x0 0x0 0x0 0x1 0x1 0x2b 0x3 0x0 0x0 0x0 0x2 0x1 0x2c 0x3 0x0 0x0 0x0 0x3 0x1 0x2d 0x3 0x0 0x0 0x0 0x4 0x1 0x2e 0x3>;
+		interrupt-names = "pcie0_inta", "pcie0_intb", "pcie0_intc", "pcie0_intd";
+		brcm,ssc;
+		clocks = <&sw_pcie0>;
+		clock-names = "sw_pcie";
+		supply-names = "vreg-wl0";
+		vreg-wl0-supply = <&vreg_wl0>;
+	};
+
+	pcie1: pcie@f1090000 {
+		ranges = <0x2000000 0x0 0xc8000000 0x0 0xc8000000 0x0 0x4000000>;
+		brcm,log2-scb-sizes = <0x1e>;
+		reg = <0x0 0xf1090000 0x0 0x9310>;
+		interrupts = <0x0 0x0 0x4>;
+		compatible = "brcm,pci-plat-dev";
+		#address-cells = <0x3>;
+		#size-cells = <0x2>;
+		tot-num-pcie = <0x3>;
+		#interrupt-cells = <0x1>;
+		interrupt-map-mask = <0xf800 0x0 0x0 0x7>;
+		interrupt-map = <0x0 0x0 0x0 0x1 0x1 0x32 0x3 0x0 0x0 0x0 0x2 0x1 0x33 0x3 0x0 0x0 0x0 0x3 0x1 0x34 0x3 0x0 0x0 0x0 0x4 0x1 0x35 0x3>;
+		interrupt-names = "pcie1_inta", "pcie1_intb", "pcie1_intc", "pcie1_intd";
+		brcm,ssc;
+		clocks = <&sw_pcie0>;
+		clock-names = "sw_pcie";
+		supply-names = "vreg-wl1";
+		vreg-wl1-supply = <&vreg_wl1>;
+	};
+
+	pcie2: pcie@f10c0000 {
+		ranges = <0x2000000 0x0 0xcc000000 0x0 0xcc000000 0x0 0x4000000>;
+		brcm,log2-scb-sizes = <0x1e>;
+		reg = <0x0 0xf10c0000 0x0 0x9310>;
+		interrupts = <0x0 0x0 0x4>;
+		compatible = "brcm,pci-plat-dev";
+		#address-cells = <0x3>;
+		#size-cells = <0x2>;
+		tot-num-pcie = <0x3>;
+		#interrupt-cells = <0x1>;
+		interrupt-map-mask = <0xf800 0x0 0x0 0x7>;
+		interrupt-map = <0x0 0x0 0x0 0x1 0x1 0x59 0x3 0x0 0x0 0x0 0x2 0x1 0x5a 0x3 0x0 0x0 0x0 0x3 0x1 0x5b 0x3 0x0 0x0 0x0 0x4 0x1 0x5c 0x3>;
+		interrupt-names = "pcie2_inta", "pcie2_intb", "pcie2_intc", "pcie2_intd";
+		brcm,ssc;
+		clocks = <&sw_pcie0>;
+		clock-names = "sw_pcie";
+		supply-names = "vreg-wl2";
+		vreg-wl2-supply = <&vreg_wl2>;
+	};
